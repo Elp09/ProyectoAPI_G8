@@ -1,0 +1,11 @@
+{
+  "version": 2,
+  "dgSpecHash": "0pMH99Qw350=",
+  "success": true,
+  "projectFilePath": "C:\\Users\\victo\\source\\repos\\proyecto\\proyecto.API\\proyecto.API.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\victo\\.nuget\\packages\\microsoft.aspnetcore.openapi\\9.0.11\\microsoft.aspnetcore.openapi.9.0.11.nupkg.sha512",
+    "C:\\Users\\victo\\.nuget\\packages\\microsoft.openapi\\1.6.17\\microsoft.openapi.1.6.17.nupkg.sha512"
+  ],
+  "logs": []
+}

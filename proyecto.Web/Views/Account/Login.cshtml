@@ -1,0 +1,34 @@
+@{
+    ViewData["Title"] = "Iniciar Sesión";
+    Layout = "_AuthLayout";
+}
+
+<div class="card shadow-sm">
+    <div class="card-body p-4">
+        <h3 class="text-center mb-4">API Ingestor</h3>
+        <h5 class="text-center text-muted mb-4">Inicie sesión en su cuenta</h5>
+
+        <form>
+            <div class="mb-3">
+                <label for="email" class="form-label">Correo electrónico</label>
+                <input type="email" class="form-control" id="email" placeholder="tu@ejemplo.com" />
+            </div>
+            <div class="mb-3">
+                <label for="password" class="form-label">Contraseña</label>
+                <input type="password" class="form-control" id="password" placeholder="Contraseña" />
+            </div>
+            <div class="mb-3 form-check">
+                <input type="checkbox" class="form-check-input" id="rememberMe" />
+                <label class="form-check-label" for="rememberMe">Recordarme</label>
+            </div>
+            <div class="d-grid">
+                <a asp-controller="Home" asp-action="Index" class="btn btn-dark">Iniciar sesión</a>
+            </div>
+        </form>
+
+        <hr />
+        <p class="text-center mb-0">
+            ¿No tiene una cuenta? <a asp-controller="Account" asp-action="Register">Registrarse</a>
+        </p>
+    </div>
+</div>
