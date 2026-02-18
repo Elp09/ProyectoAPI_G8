@@ -1,3 +1,4 @@
+@model proyecto.Web.Models.InMemoryStore
 @{
     ViewData["Title"] = "Panel";
 }
@@ -9,7 +10,7 @@
         <div class="card text-bg-dark">
             <div class="card-body">
                 <h6 class="card-subtitle mb-2 text-light-emphasis">APIs configuradas</h6>
-                <h2 class="card-title mb-0">3</h2>
+                <h2 class="card-title mb-0">@Model.Sources.Count</h2>
             </div>
         </div>
     </div>
@@ -17,7 +18,7 @@
         <div class="card text-bg-dark">
             <div class="card-body">
                 <h6 class="card-subtitle mb-2 text-light-emphasis">Objetos totales</h6>
-                <h2 class="card-title mb-0">47</h2>
+                <h2 class="card-title mb-0">@Model.Items.Count</h2>
             </div>
         </div>
     </div>
@@ -25,7 +26,11 @@
         <div class="card text-bg-dark">
             <div class="card-body">
                 <h6 class="card-subtitle mb-2 text-light-emphasis">Última ingesta</h6>
-                <h2 class="card-title mb-0">Hoy</h2>
+                <h2 class="card-title mb-0">
+                    @(Model.Items.Any()
+                        ? Model.Items.Max(i => i.FetchedAt).ToString("dd MMM")
+                        : "—")
+                </h2>
             </div>
         </div>
     </div>
@@ -39,18 +44,17 @@
                 <a asp-controller="Apis" asp-action="Index" class="btn btn-sm btn-outline-dark">Ver todo</a>
             </div>
             <ul class="list-group list-group-flush">
-                <li class="list-group-item d-flex justify-content-between align-items-center">
-                    JSONPlaceholder
-                    <span class="badge bg-success">Activo</span>
-                </li>
-                <li class="list-group-item d-flex justify-content-between align-items-center">
-                    OpenWeather
-                    <span class="badge bg-success">Activo</span>
-                </li>
-                <li class="list-group-item d-flex justify-content-between align-items-center">
-                    GitHub API
-                    <span class="badge bg-secondary">Inactivo</span>
-                </li>
+                @if (!Model.Sources.Any())
+                {
+                    <li class="list-group-item text-muted">No hay APIs configuradas.</li>
+                }
+                @foreach (var source in Model.Sources.TakeLast(3).Reverse())
+                {
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        @source.Name
+                        <span class="badge bg-success">Activo</span>
+                    </li>
+                }
             </ul>
         </div>
     </div>
@@ -61,18 +65,17 @@
                 <a asp-controller="Catalog" asp-action="Index" class="btn btn-sm btn-outline-dark">Ver todo</a>
             </div>
             <ul class="list-group list-group-flush">
-                <li class="list-group-item d-flex justify-content-between align-items-center">
-                    users.json
-                    <small class="text-muted">JSONPlaceholder</small>
-                </li>
-                <li class="list-group-item d-flex justify-content-between align-items-center">
-                    weather_ny.json
-                    <small class="text-muted">OpenWeather</small>
-                </li>
-                <li class="list-group-item d-flex justify-content-between align-items-center">
-                    repos.json
-                    <small class="text-muted">GitHub API</small>
-                </li>
+                @if (!Model.Items.Any())
+                {
+                    <li class="list-group-item text-muted">No hay objetos ingestados.</li>
+                }
+                @foreach (var item in Model.Items.TakeLast(3).Reverse())
+                {
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        @item.SourceName
+                        <small class="text-muted">@item.FetchedAt.ToString("dd MMM HH:mm")</small>
+                    </li>
+                }
             </ul>
         </div>
     </div>

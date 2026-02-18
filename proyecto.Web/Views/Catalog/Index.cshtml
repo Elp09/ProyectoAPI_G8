@@ -1,165 +1,132 @@
+@model List<proyecto.Web.Models.IngestedItem>
 @{
     ViewData["Title"] = "Catálogo";
+    var sources = ViewBag.Sources as List<proyecto.Web.Models.ApiSource> ?? new();
 }
 
-<div class="d-flex justify-content-between align-items-center mb-4">
+<div class="d-flex justify-content-between align-items-center mb-3">
     <h4 class="mb-0">Catálogo</h4>
-    <div class="d-flex gap-2">
-        <select class="form-select form-select-sm" style="width: auto;">
-            <option value="">Todas las APIs</option>
-            <option>JSONPlaceholder</option>
-            <option>OpenWeather</option>
-            <option>GitHub API</option>
-        </select>
-        <input type="text" class="form-control form-control-sm" placeholder="Buscar objetos..." style="width: 200px;" />
+</div>
+
+<!-- Query Panel -->
+<div class="card mb-4">
+    <div class="card-body">
+        @if (!sources.Any())
+        {
+            <p class="text-muted mb-0">
+                No hay APIs configuradas aún.
+                <a asp-controller="Apis" asp-action="Index">Agrega una en Mis APIs</a>.
+            </p>
+        }
+        else
+        {
+            <form asp-action="Ingest" method="post" class="row g-2">
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold">API</label>
+                    <select name="sourceId" id="sourceSelect" class="form-select">
+                        @foreach (var source in sources)
+                        {
+                            <option value="@source.Id"
+                                    data-endpoint="@source.Endpoint"
+                                    data-url="@source.Url">
+                                @source.Name
+                            </option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-5">
+                    <label class="form-label fw-semibold">Ruta del endpoint</label>
+                    <div class="input-group">
+                        <span class="input-group-text text-muted" id="baseUrlPreview" style="font-size:0.8rem; max-width:160px; overflow:hidden; white-space:nowrap;"></span>
+                        <input type="text" class="form-control" name="endpointOverride" id="endpointInput"
+                               placeholder="/ruta/del/endpoint" />
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">&nbsp;</label>
+                    <button type="submit" class="btn btn-dark w-100 d-block">Consultar</button>
+                </div>
+            </form>
+        }
     </div>
 </div>
 
-<div class="row g-3">
-    <!-- Object Card 1 -->
-    <div class="col-md-6 col-lg-4">
-        <div class="card h-100">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-start mb-2">
-                    <h6 class="card-title mb-0">users.json</h6>
-                    <span class="badge bg-dark">JSONPlaceholder</span>
-                </div>
-                <p class="card-text text-muted small mb-2">10 registros &middot; Ingestado 30 Ene, 2026</p>
-                <pre class="bg-light p-2 rounded small mb-0" style="max-height: 120px; overflow: auto;">[
-  {
-    "id": 1,
-    "name": "Leanne Graham",
-    "email": "leanne@@example.com"
-  },
-  ...
-]</pre>
+<!-- Upload Panel -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form asp-action="Upload" method="post" enctype="multipart/form-data" class="row g-2">
+            <div class="col-md-9">
+                <label class="form-label fw-semibold">Subir archivo JSON</label>
+                <input type="file" class="form-control" name="file" accept=".json" required />
             </div>
-            <div class="card-footer bg-transparent text-end">
-                <button class="btn btn-sm btn-outline-dark" onclick="downloadPlaceholder('users.json')">Descargar JSON</button>
+            <div class="col-md-3">
+                <label class="form-label">&nbsp;</label>
+                <button type="submit" class="btn btn-outline-dark w-100 d-block">Subir</button>
             </div>
-        </div>
-    </div>
-
-    <!-- Object Card 2 -->
-    <div class="col-md-6 col-lg-4">
-        <div class="card h-100">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-start mb-2">
-                    <h6 class="card-title mb-0">posts.json</h6>
-                    <span class="badge bg-dark">JSONPlaceholder</span>
-                </div>
-                <p class="card-text text-muted small mb-2">100 registros &middot; Ingestado 30 Ene, 2026</p>
-                <pre class="bg-light p-2 rounded small mb-0" style="max-height: 120px; overflow: auto;">[
-  {
-    "userId": 1,
-    "id": 1,
-    "title": "sunt aut facere..."
-  },
-  ...
-]</pre>
-            </div>
-            <div class="card-footer bg-transparent text-end">
-                <button class="btn btn-sm btn-outline-dark" onclick="downloadPlaceholder('posts.json')">Descargar JSON</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Object Card 3 -->
-    <div class="col-md-6 col-lg-4">
-        <div class="card h-100">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-start mb-2">
-                    <h6 class="card-title mb-0">weather_ny.json</h6>
-                    <span class="badge bg-dark">OpenWeather</span>
-                </div>
-                <p class="card-text text-muted small mb-2">1 registro &middot; Ingestado 31 Ene, 2026</p>
-                <pre class="bg-light p-2 rounded small mb-0" style="max-height: 120px; overflow: auto;">{
-  "city": "New York",
-  "temp": 2.5,
-  "description": "clear sky"
-}</pre>
-            </div>
-            <div class="card-footer bg-transparent text-end">
-                <button class="btn btn-sm btn-outline-dark" onclick="downloadPlaceholder('weather_ny.json')">Descargar JSON</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Object Card 4 -->
-    <div class="col-md-6 col-lg-4">
-        <div class="card h-100">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-start mb-2">
-                    <h6 class="card-title mb-0">weather_london.json</h6>
-                    <span class="badge bg-dark">OpenWeather</span>
-                </div>
-                <p class="card-text text-muted small mb-2">1 registro &middot; Ingestado 31 Ene, 2026</p>
-                <pre class="bg-light p-2 rounded small mb-0" style="max-height: 120px; overflow: auto;">{
-  "city": "London",
-  "temp": 8.1,
-  "description": "overcast clouds"
-}</pre>
-            </div>
-            <div class="card-footer bg-transparent text-end">
-                <button class="btn btn-sm btn-outline-dark" onclick="downloadPlaceholder('weather_london.json')">Descargar JSON</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Object Card 5 -->
-    <div class="col-md-6 col-lg-4">
-        <div class="card h-100">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-start mb-2">
-                    <h6 class="card-title mb-0">comments.json</h6>
-                    <span class="badge bg-dark">JSONPlaceholder</span>
-                </div>
-                <p class="card-text text-muted small mb-2">500 registros &middot; Ingestado 30 Ene, 2026</p>
-                <pre class="bg-light p-2 rounded small mb-0" style="max-height: 120px; overflow: auto;">[
-  {
-    "postId": 1,
-    "id": 1,
-    "name": "id labore..."
-  },
-  ...
-]</pre>
-            </div>
-            <div class="card-footer bg-transparent text-end">
-                <button class="btn btn-sm btn-outline-dark" onclick="downloadPlaceholder('comments.json')">Descargar JSON</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Object Card 6 -->
-    <div class="col-md-6 col-lg-4">
-        <div class="card h-100">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-start mb-2">
-                    <h6 class="card-title mb-0">repos.json</h6>
-                    <span class="badge bg-dark">GitHub API</span>
-                </div>
-                <p class="card-text text-muted small mb-2">30 registros &middot; Ingestado 1 Feb, 2026</p>
-                <pre class="bg-light p-2 rounded small mb-0" style="max-height: 120px; overflow: auto;">[
-  {
-    "id": 12345,
-    "name": "my-project",
-    "full_name": "user/my-project"
-  },
-  ...
-]</pre>
-            </div>
-            <div class="card-footer bg-transparent text-end">
-                <button class="btn btn-sm btn-outline-dark" onclick="downloadPlaceholder('repos.json')">Descargar JSON</button>
-            </div>
-        </div>
+        </form>
     </div>
 </div>
 
-<nav class="mt-4">
-    <ul class="pagination justify-content-center">
-        <li class="page-item disabled"><a class="page-link" href="#">Anterior</a></li>
-        <li class="page-item active"><a class="page-link" href="#">1</a></li>
-        <li class="page-item"><a class="page-link" href="#">2</a></li>
-        <li class="page-item"><a class="page-link" href="#">Siguiente</a></li>
-    </ul>
-</nav>
+<!-- Results -->
+@if (!Model.Any())
+{
+    <div class="text-center text-muted py-5">
+        <p>No hay resultados aún. Selecciona una API y haz clic en <strong>Consultar</strong>.</p>
+    </div>
+}
+else
+{
+    <div class="row g-3">
+        @foreach (var item in Enumerable.Reverse(Model))
+        {
+            <div class="col-md-6 col-lg-4">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-1">
+                            <h6 class="card-title mb-0">@(item.IsLocalUpload ? item.SourceName : item.SourceName)</h6>
+                            @if (item.IsLocalUpload)
+                            {
+                                <span class="badge bg-secondary">(subido localmente)</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-dark">@item.SourceName</span>
+                            }
+                        </div>
+                        <p class="text-muted small mb-2">
+                            <code>@item.Endpoint</code>
+                        </p>
+                        <p class="card-text text-muted small mb-2">
+                            @item.RecordCount registro(s) &middot; @item.FetchedAt.ToString("dd MMM yyyy, HH:mm")
+                        </p>
+                        <pre class="bg-light p-2 rounded small mb-0" style="max-height: 120px; overflow: auto;">@(item.Json.Length > 300 ? item.Json[..300] + "..." : item.Json)</pre>
+                    </div>
+                    <div class="card-footer bg-transparent text-end">
+                        <a asp-action="Download" asp-route-id="@item.Id" class="btn btn-sm btn-outline-dark">Descargar JSON</a>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@section Scripts {
+    <script>
+        const sourceSelect = document.getElementById('sourceSelect');
+        const endpointInput = document.getElementById('endpointInput');
+        const baseUrlPreview = document.getElementById('baseUrlPreview');
+
+        function updateFields() {
+            const selected = sourceSelect.options[sourceSelect.selectedIndex];
+            const defaultEndpoint = selected.dataset.endpoint || '';
+            const baseUrl = selected.dataset.url || '';
+
+            endpointInput.placeholder = defaultEndpoint || '/ruta/del/endpoint';
+            endpointInput.value = '';
+            baseUrlPreview.textContent = baseUrl;
+        }
+
+        sourceSelect.addEventListener('change', updateFields);
+        updateFields();
+    </script>
+}
