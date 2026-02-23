@@ -1,4 +1,4 @@
-@{
+@* @{
     ViewData["Title"] = "Registro";
     Layout = "_AuthLayout";
 }
@@ -35,4 +35,11 @@
             ¿Ya tiene una cuenta? <a asp-controller="Account" asp-action="Login">Iniciar sesión</a>
         </p>
     </div>
-</div>
+</div> *@
+<form method="post">
+    <input type="email" name="email" placeholder="Email" />
+    <input type="password" name="password" placeholder="Password" />
+    <button type="submit">Register</button>
+</form>
+
+<div asp-validation-summary="All"></div>

@@ -1,8 +1,13 @@
 {
   "version": 2,
-  "dgSpecHash": "X9L+7dkQ4kc=",
+  "dgSpecHash": "zP/jGkppb6c=",
   "success": true,
-  "projectFilePath": "C:\\Users\\victo\\source\\repos\\proyecto\\proyecto.Web\\proyecto.Web.csproj",
-  "expectedPackageFiles": [],
+  "projectFilePath": "C:\\Users\\elp51\\OneDrive\\Documents\\GitHub\\ProyectoAPI_G8\\proyecto.Web\\proyecto.Web.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\elp51\\.nuget\\packages\\microsoft.windowsdesktop.app.ref\\9.0.13\\microsoft.windowsdesktop.app.ref.9.0.13.nupkg.sha512",
+    "C:\\Users\\elp51\\.nuget\\packages\\microsoft.netcore.app.ref\\9.0.13\\microsoft.netcore.app.ref.9.0.13.nupkg.sha512",
+    "C:\\Users\\elp51\\.nuget\\packages\\microsoft.aspnetcore.app.ref\\9.0.13\\microsoft.aspnetcore.app.ref.9.0.13.nupkg.sha512",
+    "C:\\Users\\elp51\\.nuget\\packages\\microsoft.netcore.app.host.win-x64\\9.0.13\\microsoft.netcore.app.host.win-x64.9.0.13.nupkg.sha512"
+  ],
   "logs": []
 }
