@@ -202,10 +202,10 @@ C:\Users\elp51\OneDrive\Documents\GitHub\ProyectoAPI_G8\proyecto.API\obj\Debug\n
 C:\Users\elp51\OneDrive\Documents\GitHub\ProyectoAPI_G8\proyecto.API\obj\Debug\net9.0\staticwebassets.development.json
 C:\Users\elp51\OneDrive\Documents\GitHub\ProyectoAPI_G8\proyecto.API\obj\Debug\net9.0\staticwebassets.build.endpoints.json
 C:\Users\elp51\OneDrive\Documents\GitHub\ProyectoAPI_G8\proyecto.API\obj\Debug\net9.0\swae.build.ex.cache
+C:\Users\elp51\OneDrive\Documents\GitHub\ProyectoAPI_G8\proyecto.API\obj\Debug\net9.0\staticwebassets.upToDateCheck.txt
 C:\Users\elp51\OneDrive\Documents\GitHub\ProyectoAPI_G8\proyecto.API\obj\Debug\net9.0\proyecto.89DD0720.Up2Date
 C:\Users\elp51\OneDrive\Documents\GitHub\ProyectoAPI_G8\proyecto.API\obj\Debug\net9.0\proyecto.API.dll
 C:\Users\elp51\OneDrive\Documents\GitHub\ProyectoAPI_G8\proyecto.API\obj\Debug\net9.0\refint\proyecto.API.dll
 C:\Users\elp51\OneDrive\Documents\GitHub\ProyectoAPI_G8\proyecto.API\obj\Debug\net9.0\proyecto.API.pdb
 C:\Users\elp51\OneDrive\Documents\GitHub\ProyectoAPI_G8\proyecto.API\obj\Debug\net9.0\proyecto.API.genruntimeconfig.cache
 C:\Users\elp51\OneDrive\Documents\GitHub\ProyectoAPI_G8\proyecto.API\obj\Debug\net9.0\ref\proyecto.API.dll
-C:\Users\elp51\OneDrive\Documents\GitHub\ProyectoAPI_G8\proyecto.API\obj\Debug\net9.0\staticwebassets.upToDateCheck.txt

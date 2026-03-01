@@ -114,20 +114,27 @@ public class AccountController : Controller
         }
 
         // ======================
-        // LEER JWT Y EXTRAER CLAIMS REALES
+        // LEER JWT
         // ======================
         var handler = new JwtSecurityTokenHandler();
         var jwtToken = handler.ReadJwtToken(result.Token);
 
         var claims = new List<Claim>();
 
-        // Copiamos TODOS los claims del JWT (incluye roles reales)
         foreach (var claim in jwtToken.Claims)
         {
-            claims.Add(claim);
+            // ??MAPEAR ROLE CORRECTAMENTE
+            if (claim.Type == "role")
+            {
+                claims.Add(new Claim(ClaimTypes.Role, claim.Value));
+            }
+            else
+            {
+                claims.Add(claim);
+            }
         }
 
-        // Guardamos el token como claim adicional
+        // Guardamos token
         claims.Add(new Claim("JWToken", result.Token));
 
         var claimsIdentity = new ClaimsIdentity(

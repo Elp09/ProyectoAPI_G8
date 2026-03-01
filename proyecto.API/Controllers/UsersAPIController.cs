@@ -5,7 +5,7 @@ using proyecto.Models;
 
 [ApiController]
 [Route("api/users")]
-[Authorize(Roles = "Admin")]
+//[Authorize(Roles = "Admin")]
 public class UsersAPIController : ControllerBase
 {
     private readonly UserManager<ApplicationUser> _userManager;

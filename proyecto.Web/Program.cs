@@ -11,7 +11,7 @@ builder.Services
     .AddCookie(options =>
     {
         options.LoginPath = "/Account/Login";
-        options.AccessDeniedPath = "/Account/AccessDenied";
+        options.AccessDeniedPath = "/Account/Login";
         options.ExpireTimeSpan = TimeSpan.FromMinutes(60);
         options.SlidingExpiration = true;
     });
@@ -20,35 +20,16 @@ builder.Services
 // MVC
 // =========================
 builder.Services.AddControllersWithViews();
-
-// =========================
-// INYECCIONES
-// =========================
 builder.Services.AddSingleton<InMemoryStore>();
 
 // =========================
-// HTTP CLIENTS
+// HTTP CLIENT HACIA API
 // =========================
-
-// HttpClient normal
-builder.Services.AddHttpClient();
-
-// HttpClient hacia tu API
 builder.Services.AddHttpClient("Api", client =>
 {
-    client.BaseAddress = new Uri("http://localhost:5222/");
-});
-
-// =========================
-// SESSION (para guardar JWT si quieres)
-// =========================
-builder.Services.AddDistributedMemoryCache();
-
-builder.Services.AddSession(options =>
-{
-    options.IdleTimeout = TimeSpan.FromMinutes(60);
-    options.Cookie.HttpOnly = true;
-    options.Cookie.IsEssential = true;
+    //  IMPORTANTE:
+    // Este puerto debe ser EXACTAMENTE el de tu API
+    client.BaseAddress = new Uri("https://localhost:7251/");
 });
 
 // =========================
@@ -70,9 +51,7 @@ app.UseStaticFiles();
 
 app.UseRouting();
 
-app.UseSession(); // 🔥 Primero Session
-
-app.UseAuthentication(); // 🔥 ESTO TE FALTABA
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllerRoute(
