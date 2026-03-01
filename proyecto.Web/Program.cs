@@ -1,6 +1,20 @@
-﻿using proyecto.Web.Models;
+﻿using Microsoft.AspNetCore.Authentication.Cookies;
+using proyecto.Web.Models;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// =========================
+// AUTHENTICATION (COOKIES)
+// =========================
+builder.Services
+    .AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+    .AddCookie(options =>
+    {
+        options.LoginPath = "/Account/Login";
+        options.AccessDeniedPath = "/Account/AccessDenied";
+        options.ExpireTimeSpan = TimeSpan.FromMinutes(60);
+        options.SlidingExpiration = true;
+    });
 
 // =========================
 // MVC
@@ -12,19 +26,24 @@ builder.Services.AddControllersWithViews();
 // =========================
 builder.Services.AddSingleton<InMemoryStore>();
 
-// HttpClient normal (opcional)
+// =========================
+// HTTP CLIENTS
+// =========================
+
+// HttpClient normal
 builder.Services.AddHttpClient();
 
 // HttpClient hacia tu API
 builder.Services.AddHttpClient("Api", client =>
 {
-    client.BaseAddress = new Uri("http://localhost:5222/"); // PUERTO DE TU API
+    client.BaseAddress = new Uri("http://localhost:5222/");
 });
 
 // =========================
-// SESSION (para guardar JWT)
+// SESSION (para guardar JWT si quieres)
 // =========================
 builder.Services.AddDistributedMemoryCache();
+
 builder.Services.AddSession(options =>
 {
     options.IdleTimeout = TimeSpan.FromMinutes(60);
@@ -32,6 +51,9 @@ builder.Services.AddSession(options =>
     options.Cookie.IsEssential = true;
 });
 
+// =========================
+// BUILD
+// =========================
 var app = builder.Build();
 
 // =========================
@@ -48,8 +70,9 @@ app.UseStaticFiles();
 
 app.UseRouting();
 
-app.UseSession(); // 🔥 IMPORTANTE - antes de Authorization
+app.UseSession(); // 🔥 Primero Session
 
+app.UseAuthentication(); // 🔥 ESTO TE FALTABA
 app.UseAuthorization();
 
 app.MapControllerRoute(

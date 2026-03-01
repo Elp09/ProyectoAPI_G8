@@ -36,10 +36,26 @@
         </p>
     </div>
 </div> *@
-<form method="post">
-    <input type="email" name="email" placeholder="Email" />
-    <input type="password" name="password" placeholder="Password" />
-    <button type="submit">Register</button>
-</form>
+@{
+    ViewData["Title"] = "Register";
+}
 
-<div asp-validation-summary="All"></div>
+<div class="d-flex flex-column justify-content-center align-items-center vh-100 bg-light">
+    <div class="card p-4 shadow" style="width: 100%; max-width: 400px;">
+        <h2 class="mb-3 text-center">Register</h2>
+        <form method="post" asp-action="Register">
+            <div class="mb-3">
+                <label for="registerEmail" class="form-label">Email</label>
+                <input type="email" class="form-control form-control-lg" id="registerEmail" name="email" placeholder="tu@correo.com" required />
+            </div>
+            <div class="mb-3">
+                <label for="registerPassword" class="form-label">Password</label>
+                <input type="password" class="form-control form-control-lg" id="registerPassword" name="password" placeholder="Contraseña" required />
+            </div>
+            <div class="mb-3 text-danger">
+                <div asp-validation-summary="All"></div>
+            </div>
+            <button type="submit" class="btn btn-success w-100 btn-lg">Register</button>
+        </form>
+    </div>
+</div>

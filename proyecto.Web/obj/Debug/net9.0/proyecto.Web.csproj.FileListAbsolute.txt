@@ -195,3 +195,10 @@ C:\Users\elp51\OneDrive\Documents\GitHub\ProyectoAPI_G8\proyecto.Web\obj\Debug\n
 C:\Users\elp51\OneDrive\Documents\GitHub\ProyectoAPI_G8\proyecto.Web\obj\Debug\net9.0\proyecto.Web.genruntimeconfig.cache
 C:\Users\elp51\OneDrive\Documents\GitHub\ProyectoAPI_G8\proyecto.Web\obj\Debug\net9.0\ref\proyecto.Web.dll
 C:\Users\elp51\OneDrive\Documents\GitHub\ProyectoAPI_G8\proyecto.Web\obj\Debug\net9.0\staticwebassets.upToDateCheck.txt
+C:\Users\elp51\OneDrive\Documents\GitHub\ProyectoAPI_G8\proyecto.Web\bin\Debug\net9.0\Microsoft.IdentityModel.Abstractions.dll
+C:\Users\elp51\OneDrive\Documents\GitHub\ProyectoAPI_G8\proyecto.Web\bin\Debug\net9.0\Microsoft.IdentityModel.JsonWebTokens.dll
+C:\Users\elp51\OneDrive\Documents\GitHub\ProyectoAPI_G8\proyecto.Web\bin\Debug\net9.0\Microsoft.IdentityModel.Logging.dll
+C:\Users\elp51\OneDrive\Documents\GitHub\ProyectoAPI_G8\proyecto.Web\bin\Debug\net9.0\Microsoft.IdentityModel.Tokens.dll
+C:\Users\elp51\OneDrive\Documents\GitHub\ProyectoAPI_G8\proyecto.Web\bin\Debug\net9.0\System.IdentityModel.Tokens.Jwt.dll
+C:\Users\elp51\OneDrive\Documents\GitHub\ProyectoAPI_G8\proyecto.Web\obj\Debug\net9.0\proyecto.Web.csproj.AssemblyReference.cache
+C:\Users\elp51\OneDrive\Documents\GitHub\ProyectoAPI_G8\proyecto.Web\obj\Debug\net9.0\proyecto.8FCAD985.Up2Date

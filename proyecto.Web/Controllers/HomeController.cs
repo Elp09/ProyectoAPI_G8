@@ -1,9 +1,11 @@
 using Microsoft.AspNetCore.Mvc;
 using proyecto.Web.Models;
 using System.Diagnostics;
+using Microsoft.AspNetCore.Authorization;
 
 namespace proyecto.Web.Controllers;
 
+[Authorize] // ?? AGREGADO: ahora requiere login
 public class HomeController : Controller
 {
     private readonly ILogger<HomeController> _logger;
@@ -25,6 +27,7 @@ public class HomeController : Controller
         return View();
     }
 
+    [AllowAnonymous] // ?? OPCIONAL: si quieres permitir acceso sin login
     [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
     public IActionResult Error()
     {

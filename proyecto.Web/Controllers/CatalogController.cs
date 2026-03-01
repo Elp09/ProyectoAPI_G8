@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using proyecto.Web.Models;
 using System.Text;
@@ -5,6 +6,7 @@ using System.Text.Json;
 
 namespace proyecto.Web.Controllers;
 
+[Authorize(Roles = "Admin")]
 public class CatalogController : Controller
 {
     private readonly InMemoryStore _store;
