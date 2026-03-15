@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using proyecto.Web.Models;
+using proyecto.Web.Services;
 using System.Text;
 using System.Text.Json;
 
@@ -11,11 +12,16 @@ public class CatalogController : Controller
 {
     private readonly InMemoryStore _store;
     private readonly IHttpClientFactory _httpClientFactory;
+    private readonly GoogleTextToSpeechService _ttsService;
 
-    public CatalogController(InMemoryStore store, IHttpClientFactory httpClientFactory)
+    public CatalogController(
+        InMemoryStore store,
+        IHttpClientFactory httpClientFactory,
+        GoogleTextToSpeechService ttsService)
     {
         _store = store;
         _httpClientFactory = httpClientFactory;
+        _ttsService = ttsService;
     }
 
     public IActionResult Index()
@@ -49,8 +55,8 @@ public class CatalogController : Controller
                 {
                     "bearer" => $"Bearer {source.Secret}",
                     "apikey" => $"ApiKey {source.Secret}",
-                    "basic"  => $"Basic {source.Secret}",
-                    _        => source.Secret
+                    "basic" => $"Basic {source.Secret}",
+                    _ => source.Secret
                 });
         }
 
@@ -119,4 +125,31 @@ public class CatalogController : Controller
         var fileName = $"{item.SourceName}-{item.Endpoint.Trim('/').Replace('/', '-')}-{item.FetchedAt:yyyyMMddHHmmss}.json";
         return File(bytes, "application/json", fileName);
     }
+
+    [HttpPost]
+    public async Task<IActionResult> Speak([FromBody] SpeakRequest request)
+    {
+        if (request == null || string.IsNullOrWhiteSpace(request.Text))
+            return BadRequest("No hay texto para leer.");
+
+        try
+        {
+            byte[] audioBytes = await _ttsService.GenerateSpeechAsync(
+                request.Text,
+                string.IsNullOrWhiteSpace(request.LanguageCode) ? "es-ES" : request.LanguageCode
+            );
+
+            return File(audioBytes, "audio/mpeg");
+        }
+        catch (Exception ex)
+        {
+            return BadRequest("Error generando audio: " + ex.Message);
+        }
+    }
+}
+
+public class SpeakRequest
+{
+    public string Text { get; set; } = string.Empty;
+    public string LanguageCode { get; set; } = "es-ES";
 }

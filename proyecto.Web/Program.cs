@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authentication.Cookies;
 using proyecto.Web.Models;
+using proyecto.Web.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -20,15 +21,20 @@ builder.Services
 // MVC
 // =========================
 builder.Services.AddControllersWithViews();
+
+// =========================
+// SERVICIOS
+// =========================
 builder.Services.AddSingleton<InMemoryStore>();
+
+// IMPORTANTE: Google TTS como Singleton
+builder.Services.AddSingleton<GoogleTextToSpeechService>();
 
 // =========================
 // HTTP CLIENT HACIA API
 // =========================
 builder.Services.AddHttpClient("Api", client =>
 {
-    //  IMPORTANTE:
-    // Este puerto debe ser EXACTAMENTE el de tu API
     client.BaseAddress = new Uri("https://localhost:7251/");
 });
 
@@ -54,8 +60,14 @@ app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
 
+// =========================
+// ROUTES
+// =========================
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
 
+// =========================
+// RUN
+// =========================
 app.Run();

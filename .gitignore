@@ -1,3 +1,9 @@
-UI_CHANGES.md
-.claude/
+bin/
+obj/
 .vs/
+*.user
+*.suo
+*.cache
+*.pdb
+*.dll
+*.exe

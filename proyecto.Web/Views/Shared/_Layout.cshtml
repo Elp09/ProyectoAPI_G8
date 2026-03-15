@@ -4,21 +4,125 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - API Ingestor</title>
+
     <script type="importmap"></script>
+
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/proyecto.Web.styles.css" asp-append-version="true" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+
+    <style>
+
+        body.reader-mode header,
+        body.reader-mode footer {
+            display: none;
+        }
+
+        body.reader-mode main {
+            max-width: 760px;
+            margin: auto;
+            font-size: 20px;
+            line-height: 1.8;
+            font-family: Georgia,serif;
+            padding: 40px;
+            background: #fdfdfd;
+        }
+
+        #tts-controls {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 300px;
+            z-index: 9999;
+        }
+
+            #tts-controls .card {
+                background: #1c1c1c;
+                color: #e5e5e5;
+                border: none;
+                border-radius: 12px;
+            }
+
+            #tts-controls.minimized .card-body {
+                display: none;
+            }
+
+        .tts-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .tts-player {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 10px;
+        }
+
+            .tts-player button {
+                width: 50px;
+                height: 50px;
+                border: none;
+                border-radius: 10px;
+                background: #2ad4c5;
+                color: #003333;
+                font-size: 22px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+
+                .tts-player button:hover {
+                    background: #22b5a8;
+                }
+
+        .btn-turq {
+            background: #2ad4c5;
+            border: none;
+            color: #003333;
+            font-weight: 600;
+        }
+
+            .btn-turq:hover {
+                background: #22b5a8;
+            }
+
+        .form-range {
+            accent-color: #2ad4c5;
+        }
+
+        #tts-floating-read {
+            position: absolute;
+            display: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            border: none;
+            background: #2ad4c5;
+            color: #003333;
+            font-size: 13px;
+            z-index: 10000;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+        }
+
+    </style>
 </head>
+
 <body>
+
     <header>
         <nav class="navbar navbar-expand-sm navbar-dark bg-dark border-bottom box-shadow mb-3">
             <div class="container-fluid">
+
                 <a class="navbar-brand" asp-controller="Home" asp-action="Index">API Ingestor</a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
-                        aria-controls="navbarNav" aria-expanded="false" aria-label="Alternar navegación">
+
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                     <span class="navbar-toggler-icon"></span>
                 </button>
+
                 <div class="collapse navbar-collapse" id="navbarNav">
+
                     <ul class="navbar-nav me-auto">
 
                         @if (User.Identity.IsAuthenticated)
@@ -36,52 +140,55 @@
                                 <li class="nav-item">
                                     <a class="nav-link" asp-controller="Catalog" asp-action="Index">Gestión Catálogo</a>
                                 </li>
+
                                 <li class="nav-item">
-                                    <a class="nav-link" asp-controller="Users" asp-action="Index">
-                                        Usuarios
-                                    </a>
+                                    <a class="nav-link" asp-controller="Users" asp-action="Index">Usuarios</a>
                                 </li>
                             }
                         }
+
                     </ul>
+
                     <ul class="navbar-nav">
+
                         @if (User.Identity.IsAuthenticated)
                         {
                             <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle" href="#" role="button"
-                                   data-bs-toggle="dropdown">
+
+                                <a class="nav-link dropdown-toggle" data-bs-toggle="dropdown">
                                     @User.Identity.Name
                                 </a>
+
                                 <ul class="dropdown-menu dropdown-menu-end">
-                                    <li><a class="dropdown-item" href="#">Perfil</a></li>
+
+                                    <li><a class="dropdown-item">Perfil</a></li>
+
                                     <li><hr class="dropdown-divider" /></li>
+
                                     <li>
-                                        <form asp-controller="Account"
-                                              asp-action="Logout"
-                                              method="post">
-                                            <button type="submit" class="dropdown-item">
-                                                Cerrar sesión
-                                            </button>
+                                        <form asp-controller="Account" asp-action="Logout" method="post">
+                                            <button type="submit" class="dropdown-item">Cerrar sesión</button>
                                         </form>
                                     </li>
+
                                 </ul>
                             </li>
                         }
                         else
                         {
                             <li class="nav-item">
-                                <a class="nav-link"
-                                   asp-controller="Account"
-                                   asp-action="Login">
+                                <a class="nav-link" asp-controller="Account" asp-action="Login">
                                     Iniciar sesión
                                 </a>
                             </li>
                         }
+
                     </ul>
                 </div>
             </div>
         </nav>
     </header>
+
     <div class="container">
         <main role="main" class="pb-3">
             @RenderBody()
@@ -90,12 +197,317 @@
 
     <footer class="border-top footer text-muted">
         <div class="container">
-            &copy; 2026 - API Ingestor
+            © 2026 - API Ingestor
         </div>
     </footer>
+
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="~/js/site.js" asp-append-version="true"></script>
-    @await RenderSectionAsync("Scripts", required: false)
+
+    <div id="tts-controls">
+
+        <div class="card shadow-lg">
+
+            <div class="card-header tts-header">
+
+                <strong>🔊 Lector</strong>
+
+                <button class="btn btn-sm btn-dark" id="minBtn">−</button>
+
+            </div>
+
+            <div class="card-body">
+
+                <input type="range" id="progressBar" class="form-range" disabled>
+
+                <div class="d-flex justify-content-between small mb-2">
+
+                    <span id="currentTime">0:00</span>
+                    <span id="duration">0:00</span>
+
+                </div>
+
+                <div class="tts-player">
+
+                    <button onclick="playAudio()">
+                        <i class="bi bi-play-fill"></i>
+                    </button>
+
+                    <button onclick="pauseAudio()">
+                        <i class="bi bi-pause-fill"></i>
+                    </button>
+
+                    <button onclick="stopAudio()">
+                        <i class="bi bi-stop-fill"></i>
+                    </button>
+
+                </div>
+
+                <button class="btn btn-turq w-100 mb-2" onclick="readSelection()">
+                    Leer selección
+                </button>
+
+                <label>Idioma</label>
+
+                <select id="languageSelect" class="form-select form-select-sm mb-2">
+
+                    <option value="auto">Auto</option>
+                    <option value="es-ES">Español</option>
+                    <option value="en-US">English</option>
+                    <option value="fr-FR">Français</option>
+                    <option value="de-DE">Deutsch</option>
+                    <option value="it-IT">Italiano</option>
+                    <option value="pt-BR">Português</option>
+                    <option value="ru-RU">Русский</option>
+                    <option value="ja-JP">日本語</option>
+                    <option value="ko-KR">한국어</option>
+                    <option value="zh-CN">中文</option>
+                    <option value="ar-XA">العربية</option>
+                    <option value="hi-IN">हिन्दी</option>
+
+                </select>
+
+                <label>Velocidad</label>
+
+                <input type="range" id="speedControl" class="form-range" min="0.6" max="1.5" step="0.1" value="1">
+
+                <div class="text-end small mb-2">
+                    Velocidad: <span id="speedValue">1.0</span>x
+                </div>
+
+                <button id="readerModeBtn" class="btn btn-outline-light btn-sm w-100">
+                    Modo lectura
+                </button>
+
+            </div>
+        </div>
+    </div>
+
+    <button id="tts-floating-read">🔊 Leer</button>
+
+    <script>
+
+        let audioPlayer=null
+        let queue=[]
+        let playing=false
+        let currentText=""
+
+        function resetPlayer(){
+        if(audioPlayer){
+        audioPlayer.pause()
+        audioPlayer.currentTime=0
+        }
+        queue=[]
+        playing=false
+        }
+
+        function getMainContent(){
+
+        let article=document.querySelector("article")
+
+        if(article && article.innerText.length>200)
+        return article.innerText
+
+        let paragraphs=[...document.querySelectorAll("main p")]
+        .filter(p=>p.innerText.length>120)
+
+        if(paragraphs.length>0)
+        return paragraphs.map(p=>p.innerText).join(" ")
+
+        return document.querySelector("main").innerText
+
+        }
+
+        function detectLanguage(text){
+        return /[ñáéíóú]/.test(text) ? "es-ES" : "en-US"
+        }
+
+        async function requestAudio(text){
+
+        let lang=languageSelect.value
+        if(lang==="auto") lang=detectLanguage(text)
+
+        const response=await fetch('/api/tts',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({text:text,language:lang})
+        })
+
+        if(!response.ok) return null
+
+        return await response.blob()
+
+        }
+
+        function enqueue(text){
+
+        queue.push(text)
+
+        if(!playing){
+        processQueue()
+        }
+
+        }
+
+        async function processQueue(){
+
+        if(queue.length===0){
+        playing=false
+        return
+        }
+
+        playing=true
+
+        currentText=queue.shift()
+
+        const blob=await requestAudio(currentText)
+
+        if(!blob){
+        processQueue()
+        return
+        }
+
+        const url=URL.createObjectURL(blob)
+
+        audioPlayer=new Audio(url)
+
+        audioPlayer.playbackRate=speedControl.value
+
+        audioPlayer.play()
+
+        audioPlayer.ontimeupdate=()=>{
+
+        progressBar.value=(audioPlayer.currentTime/audioPlayer.duration)*100
+
+        currentTime.innerText=formatTime(audioPlayer.currentTime)
+        duration.innerText=formatTime(audioPlayer.duration)
+
+        }
+
+        audioPlayer.onended=()=>{
+        processQueue()
+        }
+
+        }
+
+        function playAudio(){
+
+        resetPlayer()
+
+        enqueue(getMainContent())
+
+        }
+
+        function pauseAudio(){
+        if(audioPlayer){
+        audioPlayer.pause()
+        playing=false
+        }
+        }
+
+        function stopAudio(){
+        resetPlayer()
+        }
+
+        function readSelection(){
+
+        const text=window.getSelection().toString()
+
+        if(!text) return
+
+        resetPlayer()
+
+        enqueue(text)
+
+        }
+
+        languageSelect.addEventListener("change",async function(){
+
+        if(!audioPlayer) return
+
+        const pos=audioPlayer.currentTime
+
+        audioPlayer.pause()
+
+        const blob=await requestAudio(currentText)
+        if(!blob) return
+
+        const url=URL.createObjectURL(blob)
+
+        const newAudio=new Audio(url)
+
+        newAudio.playbackRate=speedControl.value
+
+        newAudio.addEventListener("loadedmetadata",()=>{
+        newAudio.currentTime=pos
+        newAudio.play()
+        })
+
+        audioPlayer=newAudio
+
+        })
+
+        speedControl.oninput=function(){
+        speedValue.innerText=this.value
+        if(audioPlayer) audioPlayer.playbackRate=this.value
+        }
+
+        readerModeBtn.onclick=function(){
+
+        document.body.classList.toggle("reader-mode")
+
+        readerModeBtn.innerText=
+        document.body.classList.contains("reader-mode")
+        ?"Salir del modo lectura"
+        :"Modo lectura"
+
+        }
+
+        function formatTime(s){
+        const m=Math.floor(s/60)
+        const sec=Math.floor(s%60)
+        return m+":"+sec.toString().padStart(2,"0")
+        }
+
+        const floatingBtn=document.getElementById("tts-floating-read")
+
+        document.addEventListener("mouseup",function(){
+
+        const text=window.getSelection().toString()
+
+        if(text.length>2){
+
+        const rect=window.getSelection().getRangeAt(0).getBoundingClientRect()
+
+        floatingBtn.style.display="block"
+        floatingBtn.style.left=(rect.left+window.scrollX)+"px"
+        floatingBtn.style.top=(rect.top+window.scrollY-40)+"px"
+
+        }else{
+        floatingBtn.style.display="none"
+        }
+
+        })
+
+        floatingBtn.onclick=function(){
+        readSelection()
+        floatingBtn.style.display="none"
+        }
+
+        minBtn.onclick=function(){
+
+        const panel=document.getElementById("tts-controls")
+
+        panel.classList.toggle("minimized")
+
+        minBtn.innerText=
+        panel.classList.contains("minimized")
+        ?"+"
+        :"−"
+
+        }
+
+    </script>
+
 </body>
 </html>
