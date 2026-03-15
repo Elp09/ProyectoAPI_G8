@@ -4,8 +4,26 @@
     var sources = ViewBag.Sources as List<proyecto.Web.Models.ApiSource> ?? new();
 }
 
-<div class="d-flex justify-content-between align-items-center mb-3">
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
     <h4 class="mb-0">Catálogo</h4>
+
+    <div class="d-flex align-items-center gap-2">
+        <label for="readerLanguage" class="fw-semibold mb-0">Idioma del lector:</label>
+        <select id="readerLanguage" class="form-select form-select-sm" style="width: 260px;">
+            <option value="es-ES" selected>Español</option>
+            <option value="en-US">English</option>
+            <option value="pt-BR">Português</option>
+            <option value="fr-FR">Français</option>
+            <option value="it-IT">Italiano</option>
+            <option value="de-DE">Deutsch</option>
+            <option value="ru-RU">Русский</option>
+            <option value="zh-CN">中文 (China)</option>
+            <option value="ja-JP">日本語</option>
+            <option value="ko-KR">한국어</option>
+            <option value="ar-XA">العربية</option>
+            <option value="hi-IN">हिन्दी</option>
+        </select>
+    </div>
 </div>
 
 <!-- Query Panel -->
@@ -79,11 +97,13 @@ else
     <div class="row g-3">
         @foreach (var item in Enumerable.Reverse(Model))
         {
+            var previewText = item.Json.Length > 300 ? item.Json[..300] + "..." : item.Json;
+
             <div class="col-md-6 col-lg-4">
                 <div class="card h-100">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-start mb-1">
-                            <h6 class="card-title mb-0">@(item.IsLocalUpload ? item.SourceName : item.SourceName)</h6>
+                            <h6 class="card-title mb-0">@(item.IsLocalUpload? item.SourceName: item.SourceName)</h6>
                             @if (item.IsLocalUpload)
                             {
                                 <span class="badge bg-secondary">(subido localmente)</span>
@@ -93,16 +113,40 @@ else
                                 <span class="badge bg-dark">@item.SourceName</span>
                             }
                         </div>
+
                         <p class="text-muted small mb-2">
                             <code>@item.Endpoint</code>
                         </p>
+
                         <p class="card-text text-muted small mb-2">
                             @item.RecordCount registro(s) &middot; @item.FetchedAt.ToString("dd MMM yyyy, HH:mm")
                         </p>
-                        <pre class="bg-light p-2 rounded small mb-0" style="max-height: 120px; overflow: auto;">@(item.Json.Length > 300 ? item.Json[..300] + "..." : item.Json)</pre>
+
+                        <pre id="content-@item.Id"
+                             class="bg-light p-2 rounded small mb-0"
+                             style="max-height: 120px; overflow: auto;">@previewText</pre>
                     </div>
-                    <div class="card-footer bg-transparent text-end">
-                        <a asp-action="Download" asp-route-id="@item.Id" class="btn btn-sm btn-outline-dark">Descargar JSON</a>
+
+                    <div class="card-footer bg-transparent">
+                        <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center">
+                            <div class="d-flex flex-wrap gap-2">
+                                <button type="button"
+                                        class="btn btn-sm btn-primary"
+                                        onclick="playGeneratedAudio('content-@item.Id', '@item.SourceName', this)">
+                                    Leer
+                                </button>
+
+                                <button type="button"
+                                        class="btn btn-sm btn-danger"
+                                        onclick="stopGeneratedAudio()">
+                                    Detener
+                                </button>
+                            </div>
+
+                            <a asp-action="Download" asp-route-id="@item.Id" class="btn btn-sm btn-outline-dark">
+                                Descargar JSON
+                            </a>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -110,13 +154,22 @@ else
     </div>
 }
 
+<audio id="ttsAudioPlayer" style="display:none;"></audio>
+
 @section Scripts {
     <script>
         const sourceSelect = document.getElementById('sourceSelect');
         const endpointInput = document.getElementById('endpointInput');
         const baseUrlPreview = document.getElementById('baseUrlPreview');
+        const readerLanguage = document.getElementById('readerLanguage');
+        const ttsAudioPlayer = document.getElementById('ttsAudioPlayer');
+
+        let currentAudioUrl = null;
+        let currentReadButton = null;
 
         function updateFields() {
+            if (!sourceSelect) return;
+
             const selected = sourceSelect.options[sourceSelect.selectedIndex];
             const defaultEndpoint = selected.dataset.endpoint || '';
             const baseUrl = selected.dataset.url || '';
@@ -126,7 +179,93 @@ else
             baseUrlPreview.textContent = baseUrl;
         }
 
-        sourceSelect.addEventListener('change', updateFields);
-        updateFields();
+        if (sourceSelect) {
+            sourceSelect.addEventListener('change', updateFields);
+            updateFields();
+        }
+
+        function resetReadButton() {
+            if (currentReadButton) {
+                currentReadButton.innerText = 'Leer';
+                currentReadButton.disabled = false;
+                currentReadButton = null;
+            }
+        }
+
+        async function playGeneratedAudio(elementId, sourceName, button) {
+            const element = document.getElementById(elementId);
+            if (!element) return;
+
+            const visibleText = element.innerText.trim();
+
+            if (!visibleText) {
+                alert("No hay contenido para leer.");
+                return;
+            }
+
+            try {
+                stopGeneratedAudio();
+
+                currentReadButton = button;
+                button.disabled = true;
+                button.innerText = "Generando audio...";
+
+                const intro = `Leyendo contenido de ${sourceName}.`;
+                const fullText = `${intro} ${visibleText}`;
+
+                const response = await fetch('/Catalog/Speak', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        text: fullText,
+                        languageCode: readerLanguage ? readerLanguage.value : 'es-ES'
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(errorText || 'No se pudo generar el audio.');
+                }
+
+                const blob = await response.blob();
+                currentAudioUrl = URL.createObjectURL(blob);
+
+                ttsAudioPlayer.src = currentAudioUrl;
+                await ttsAudioPlayer.play();
+
+                button.innerText = 'Reproduciendo...';
+
+                ttsAudioPlayer.onended = function () {
+                    resetReadButton();
+
+                    if (currentAudioUrl) {
+                        URL.revokeObjectURL(currentAudioUrl);
+                        currentAudioUrl = null;
+                    }
+                };
+            }
+            catch (error) {
+                alert("Error al generar el audio: " + error.message);
+                resetReadButton();
+            }
+        }
+
+        function stopGeneratedAudio() {
+            if (ttsAudioPlayer) {
+                ttsAudioPlayer.pause();
+                ttsAudioPlayer.currentTime = 0;
+                ttsAudioPlayer.removeAttribute('src');
+                ttsAudioPlayer.load();
+            }
+
+            if (currentAudioUrl) {
+                URL.revokeObjectURL(currentAudioUrl);
+                currentAudioUrl = null;
+            }
+
+            resetReadButton();
+        }
     </script>
 }

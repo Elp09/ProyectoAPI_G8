@@ -11,7 +11,7 @@ namespace proyecto.Data
             var optionsBuilder = new DbContextOptionsBuilder<ApplicationDbContext>();
 
             optionsBuilder.UseSqlServer(
-                "Server=localhost;Database=proyectoDb;Trusted_Connection=True;TrustServerCertificate=True;"
+                "Server=CHAR\\SQLEXPRESS;Database=proyectoDb;Trusted_Connection=True;TrustServerCertificate=True;"
             );
 
             return new ApplicationDbContext(optionsBuilder.Options);
