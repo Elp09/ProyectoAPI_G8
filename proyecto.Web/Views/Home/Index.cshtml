@@ -1,24 +1,28 @@
-@model proyecto.Web.Models.InMemoryStore
 @{
     ViewData["Title"] = "Panel";
 }
 
 <h4 class="mb-4">Panel</h4>
 
+@if (TempData["Info"] != null)
+{
+    <div class="alert alert-info">@TempData["Info"]</div>
+}
+
 <div class="row g-4 mb-4">
     <div class="col-md-4">
         <div class="card text-bg-dark">
             <div class="card-body">
                 <h6 class="card-subtitle mb-2 text-light-emphasis">APIs configuradas</h6>
-                <h2 class="card-title mb-0">@Model.Sources.Count</h2>
+                <h2 class="card-title mb-0">@ViewBag.SourcesCount</h2>
             </div>
         </div>
     </div>
     <div class="col-md-4">
         <div class="card text-bg-dark">
             <div class="card-body">
-                <h6 class="card-subtitle mb-2 text-light-emphasis">Objetos totales</h6>
-                <h2 class="card-title mb-0">@Model.Items.Count</h2>
+                <h6 class="card-subtitle mb-2 text-light-emphasis">Ítems guardados</h6>
+                <h2 class="card-title mb-0">@ViewBag.ItemsCount</h2>
             </div>
         </div>
     </div>
@@ -27,8 +31,8 @@
             <div class="card-body">
                 <h6 class="card-subtitle mb-2 text-light-emphasis">Última ingesta</h6>
                 <h2 class="card-title mb-0">
-                    @(Model.Items.Any()
-                        ? Model.Items.Max(i => i.FetchedAt).ToString("dd MMM")
+                    @(ViewBag.LastIngest != null
+                        ? ((DateTime)ViewBag.LastIngest).ToString("dd MMM")
                         : "—")
                 </h2>
             </div>
@@ -44,16 +48,19 @@
                 <a asp-controller="Apis" asp-action="Index" class="btn btn-sm btn-outline-dark">Ver todo</a>
             </div>
             <ul class="list-group list-group-flush">
-                @if (!Model.Sources.Any())
+                @if (ViewBag.Sources == null || ((List<proyecto.Web.Models.ApiSource>)ViewBag.Sources).Count == 0)
                 {
                     <li class="list-group-item text-muted">No hay APIs configuradas.</li>
                 }
-                @foreach (var source in Model.Sources.TakeLast(3).Reverse())
+                else
                 {
-                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                        @source.Name
-                        <span class="badge bg-success">Activo</span>
-                    </li>
+                    foreach (var source in (List<proyecto.Web.Models.ApiSource>)ViewBag.Sources)
+                    {
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            @source.Name
+                            <span class="badge bg-success">Activo</span>
+                        </li>
+                    }
                 }
             </ul>
         </div>
@@ -61,20 +68,23 @@
     <div class="col-md-6">
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
-                <strong>Objetos recientes</strong>
+                <strong>Ítems recientes</strong>
                 <a asp-controller="Catalog" asp-action="Index" class="btn btn-sm btn-outline-dark">Ver todo</a>
             </div>
             <ul class="list-group list-group-flush">
-                @if (!Model.Items.Any())
+                @if (ViewBag.RecentItems == null || ((List<proyecto.Web.Models.SavedItemDto>)ViewBag.RecentItems).Count == 0)
                 {
-                    <li class="list-group-item text-muted">No hay objetos ingestados.</li>
+                    <li class="list-group-item text-muted">No hay ítems guardados.</li>
                 }
-                @foreach (var item in Model.Items.TakeLast(3).Reverse())
+                else
                 {
-                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                        @item.SourceName
-                        <small class="text-muted">@item.FetchedAt.ToString("dd MMM HH:mm")</small>
-                    </li>
+                    foreach (var item in (List<proyecto.Web.Models.SavedItemDto>)ViewBag.RecentItems)
+                    {
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <span>Ítem #@item.Id</span>
+                            <small class="text-muted">@item.CreatedAt.ToString("dd MMM HH:mm")</small>
+                        </li>
+                    }
                 }
             </ul>
         </div>

@@ -18,6 +18,17 @@ builder.Services
     });
 
 // =========================
+// SESSION
+// =========================
+builder.Services.AddDistributedMemoryCache();
+builder.Services.AddSession(options =>
+{
+    options.IdleTimeout = TimeSpan.FromHours(2);
+    options.Cookie.HttpOnly = true;
+    options.Cookie.IsEssential = true;
+});
+
+// =========================
 // MVC
 // =========================
 builder.Services.AddControllersWithViews();
@@ -35,7 +46,7 @@ builder.Services.AddSingleton<GoogleTextToSpeechService>();
 // =========================
 builder.Services.AddHttpClient("Api", client =>
 {
-    client.BaseAddress = new Uri("https://localhost:7251/");
+    client.BaseAddress = new Uri("http://localhost:5222/");
 });
 
 // =========================
@@ -57,6 +68,7 @@ app.UseStaticFiles();
 
 app.UseRouting();
 
+app.UseSession();
 app.UseAuthentication();
 app.UseAuthorization();
 

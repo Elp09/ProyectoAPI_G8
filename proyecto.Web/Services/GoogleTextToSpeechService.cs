@@ -4,11 +4,11 @@ namespace proyecto.Web.Services;
 
 public class GoogleTextToSpeechService
 {
-    private readonly TextToSpeechClient _client;
+    private TextToSpeechClient? _client;
 
-    public GoogleTextToSpeechService()
+    private TextToSpeechClient GetClient()
     {
-        _client = TextToSpeechClient.Create();
+        return _client ??= TextToSpeechClient.Create();
     }
 
     public async Task<byte[]> GenerateSpeechAsync(string text, string languageCode)
@@ -31,7 +31,7 @@ public class GoogleTextToSpeechService
                 AudioEncoding = AudioEncoding.Mp3
             };
 
-            var response = await _client.SynthesizeSpeechAsync(
+            var response = await GetClient().SynthesizeSpeechAsync(
                 input,
                 voice,
                 config
