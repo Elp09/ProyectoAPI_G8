@@ -191,6 +191,7 @@ else
     </div>
 }
 
+<audio id="ttsAudioPlayer" style="display:none;"></audio>
 
 @section Scripts {
 <script>
@@ -198,6 +199,8 @@ else
     const endpointInput = document.getElementById('endpointInput');
     const baseUrlPreview = document.getElementById('baseUrlPreview');
     const readerLanguage = document.getElementById('readerLanguage');
+    const ttsAudioPlayer = document.getElementById('ttsAudioPlayer');
+    let currentAudioUrl = null;
     let currentReadButton = null;
 
     function updateFields() {
@@ -205,52 +208,72 @@ else
         const selected = sourceSelect.options[sourceSelect.selectedIndex];
         endpointInput.placeholder = selected.dataset.endpoint || '/ruta';
         endpointInput.value = '';
-        endpointInput.value = '';
         baseUrlPreview.value = selected.dataset.url || '';
     }
 
     if (sourceSelect) { sourceSelect.addEventListener('change', updateFields); updateFields(); }
 
     function resetReadButton() {
-        if (currentReadButton) { currentReadButton.innerText = 'Leer'; currentReadButton.disabled = false; currentReadButton = null; }
+        if (currentReadButton) {
+            currentReadButton.innerText = 'Leer';
+            currentReadButton.disabled = false;
+            currentReadButton = null;
+        }
     }
 
-    function playGeneratedAudio(elementId, sourceName, button) {
-        if (!('speechSynthesis' in window)) { alert("Tu navegador no soporta síntesis de voz."); return; }
+    async function playGeneratedAudio(elementId, sourceName, button) {
+        const element = document.getElementById(elementId);
+        if (!element) return;
 
-        const el = document.getElementById(elementId);
-        if (!el) { alert("Elemento no encontrado: " + elementId); return; }
-        const raw = el.innerText.trim();
-        if (!raw) { alert("No hay contenido para leer."); return; }
-        // Strip JSON symbols so it reads naturally
-        const text = raw.replace(/[{}\[\]"]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 200);
+        const visibleText = element.innerText.trim();
+        if (!visibleText) { alert("No hay contenido para leer."); return; }
 
-        stopGeneratedAudio();
-        currentReadButton = button;
-        button.disabled = true;
-        button.innerText = 'Reproduciendo...';
+        try {
+            stopGeneratedAudio();
+            currentReadButton = button;
+            button.disabled = true;
+            button.innerText = "Generando audio...";
 
-        const lang = readerLanguage?.value ?? 'es-ES';
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = lang;
-        utterance.onend = () => resetReadButton();
-        utterance.onerror = (e) => { alert("Error TTS: " + e.error); resetReadButton(); };
+            const fullText = `Leyendo contenido de ${sourceName}. ${visibleText}`;
 
-        // Chrome requires a small delay and voices to be loaded
-        const doSpeak = () => {
-            window.speechSynthesis.cancel();
-            setTimeout(() => window.speechSynthesis.speak(utterance), 100);
-        };
-        const voices = window.speechSynthesis.getVoices();
-        if (voices.length === 0) {
-            window.speechSynthesis.onvoiceschanged = () => { window.speechSynthesis.onvoiceschanged = null; doSpeak(); };
-        } else {
-            doSpeak();
+            const response = await fetch('/Catalog/Speak', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    text: fullText,
+                    languageCode: readerLanguage ? readerLanguage.value : 'es-ES'
+                })
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(errorText || 'No se pudo generar el audio.');
+            }
+
+            const blob = await response.blob();
+            currentAudioUrl = URL.createObjectURL(blob);
+            ttsAudioPlayer.src = currentAudioUrl;
+            await ttsAudioPlayer.play();
+            button.innerText = 'Reproduciendo...';
+
+            ttsAudioPlayer.onended = function () {
+                resetReadButton();
+                if (currentAudioUrl) { URL.revokeObjectURL(currentAudioUrl); currentAudioUrl = null; }
+            };
+        } catch (error) {
+            alert("Error al generar el audio: " + error.message);
+            resetReadButton();
         }
     }
 
     function stopGeneratedAudio() {
-        window.speechSynthesis.cancel();
+        if (ttsAudioPlayer) {
+            ttsAudioPlayer.pause();
+            ttsAudioPlayer.currentTime = 0;
+            ttsAudioPlayer.removeAttribute('src');
+            ttsAudioPlayer.load();
+        }
+        if (currentAudioUrl) { URL.revokeObjectURL(currentAudioUrl); currentAudioUrl = null; }
         resetReadButton();
     }
 </script>
