@@ -30,7 +30,7 @@ public class AccountController : Controller
     {
         if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
         {
-            ModelState.AddModelError("", "Email y contraseña son obligatorios");
+            ModelState.AddModelError("", "Email y contraseï¿½a son obligatorios");
             return View();
         }
 
@@ -72,7 +72,7 @@ public class AccountController : Controller
     {
         if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
         {
-            ModelState.AddModelError("", "Email y contraseña son obligatorios");
+            ModelState.AddModelError("", "Email y contraseï¿½a son obligatorios");
             return View();
         }
 
@@ -94,7 +94,7 @@ public class AccountController : Controller
 
         if (!response.IsSuccessStatusCode)
         {
-            ModelState.AddModelError("", "Credenciales inválidas");
+            ModelState.AddModelError("", "Credenciales invï¿½lidas");
             return View();
         }
 
@@ -123,19 +123,14 @@ public class AccountController : Controller
 
         foreach (var claim in jwtToken.Claims)
         {
-            // ??MAPEAR ROLE CORRECTAMENTE
             if (claim.Type == "role")
-            {
                 claims.Add(new Claim(ClaimTypes.Role, claim.Value));
-            }
             else
-            {
                 claims.Add(claim);
-            }
         }
 
-        // Guardamos token
-        claims.Add(new Claim("JWToken", result.Token));
+        // Guardamos token en sesiÃ³n (evita problemas de tamaÃ±o en cookie)
+        HttpContext.Session.SetString("JWToken", result.Token);
 
         var claimsIdentity = new ClaimsIdentity(
             claims,
@@ -152,6 +147,8 @@ public class AccountController : Controller
             new ClaimsPrincipal(claimsIdentity),
             authProperties);
 
+        await HttpContext.Session.CommitAsync();
+
         return RedirectToAction("Index", "Home");
     }
 
@@ -161,6 +158,7 @@ public class AccountController : Controller
     [HttpPost]
     public async Task<IActionResult> Logout()
     {
+        HttpContext.Session.Clear();
         await HttpContext.SignOutAsync(
             CookieAuthenticationDefaults.AuthenticationScheme);
 

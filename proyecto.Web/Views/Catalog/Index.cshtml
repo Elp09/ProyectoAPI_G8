@@ -2,150 +2,187 @@
 @{
     ViewData["Title"] = "Catálogo";
     var sources = ViewBag.Sources as List<proyecto.Web.Models.ApiSource> ?? new();
+    var dbItems = ViewBag.DbItems as List<proyecto.Web.Models.SavedItemDto> ?? new();
+}
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show">@TempData["Success"]<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show">@TempData["Error"]<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
 }
 
 <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
     <h4 class="mb-0">Catálogo</h4>
-
     <div class="d-flex align-items-center gap-2">
         <label for="readerLanguage" class="fw-semibold mb-0">Idioma del lector:</label>
-        <select id="readerLanguage" class="form-select form-select-sm" style="width: 260px;">
+        <select id="readerLanguage" class="form-select form-select-sm" style="width: 200px;">
             <option value="es-ES" selected>Español</option>
             <option value="en-US">English</option>
             <option value="pt-BR">Português</option>
             <option value="fr-FR">Français</option>
-            <option value="it-IT">Italiano</option>
             <option value="de-DE">Deutsch</option>
-            <option value="ru-RU">Русский</option>
-            <option value="zh-CN">中文 (China)</option>
-            <option value="ja-JP">日本語</option>
-            <option value="ko-KR">한국어</option>
-            <option value="ar-XA">العربية</option>
-            <option value="hi-IN">हिन्दी</option>
         </select>
     </div>
 </div>
 
-<!-- Query Panel -->
+<!-- Panel de consulta -->
 <div class="card mb-4">
+    <div class="card-header fw-semibold">Consultar fuente</div>
     <div class="card-body">
         @if (!sources.Any())
         {
-            <p class="text-muted mb-0">
-                No hay APIs configuradas aún.
-                <a asp-controller="Apis" asp-action="Index">Agrega una en Mis APIs</a>.
-            </p>
+            <p class="text-muted mb-0">No hay APIs configuradas. <a asp-controller="Apis" asp-action="Index">Agrega una</a>.</p>
         }
         else
         {
             <form asp-action="Ingest" method="post" class="row g-2">
+                @Html.AntiForgeryToken()
                 <div class="col-md-4">
-                    <label class="form-label fw-semibold">API</label>
+                    <label class="form-label fw-semibold">Fuente</label>
                     <select name="sourceId" id="sourceSelect" class="form-select">
-                        @foreach (var source in sources)
+                        @foreach (var s in sources)
                         {
-                            <option value="@source.Id"
-                                    data-endpoint="@source.Endpoint"
-                                    data-url="@source.Url">
-                                @source.Name
-                            </option>
+                            <option value="@s.Id" data-endpoint="@s.Endpoint" data-url="@s.Url">@s.Name</option>
                         }
                     </select>
                 </div>
                 <div class="col-md-5">
-                    <label class="form-label fw-semibold">Ruta del endpoint</label>
-                    <div class="input-group">
-                        <span class="input-group-text text-muted" id="baseUrlPreview" style="font-size:0.8rem; max-width:160px; overflow:hidden; white-space:nowrap;"></span>
-                        <input type="text" class="form-control" name="endpointOverride" id="endpointInput"
-                               placeholder="/ruta/del/endpoint" />
-                    </div>
+                    <label class="form-label fw-semibold">Endpoint</label>
+                    <input type="text" class="form-control form-control-sm bg-light text-muted mb-1" id="baseUrlPreview" readonly tabindex="-1" />
+                    <input type="text" class="form-control" name="endpointOverride" id="endpointInput" placeholder="/ruta" />
                 </div>
-                <div class="col-md-3">
-                    <label class="form-label">&nbsp;</label>
-                    <button type="submit" class="btn btn-dark w-100 d-block">Consultar</button>
+                <div class="col-md-3 d-flex align-items-end">
+                    <button type="submit" class="btn btn-dark w-100">Consultar</button>
                 </div>
             </form>
         }
     </div>
 </div>
 
-<!-- Upload Panel -->
+<!-- Panel de carga -->
 <div class="card mb-4">
+    <div class="card-header fw-semibold">Subir archivo JSON</div>
     <div class="card-body">
         <form asp-action="Upload" method="post" enctype="multipart/form-data" class="row g-2">
-            <div class="col-md-9">
-                <label class="form-label fw-semibold">Subir archivo JSON</label>
+            @Html.AntiForgeryToken()
+            <div class="col-md-4">
+                <label class="form-label fw-semibold">Fuente destino</label>
+                <select name="sourceId" class="form-select">
+                    @foreach (var s in sources)
+                    {
+                        <option value="@s.Id">@s.Name</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-5">
+                <label class="form-label fw-semibold">Archivo</label>
                 <input type="file" class="form-control" name="file" accept=".json" required />
             </div>
-            <div class="col-md-3">
-                <label class="form-label">&nbsp;</label>
-                <button type="submit" class="btn btn-outline-dark w-100 d-block">Subir</button>
+            <div class="col-md-3 d-flex align-items-end">
+                <button type="submit" class="btn btn-outline-dark w-100">Subir</button>
             </div>
         </form>
     </div>
 </div>
 
-<!-- Results -->
-@if (!Model.Any())
+<!-- Ítems temporales (no guardados) -->
+@if (Model.Any())
 {
-    <div class="text-center text-muted py-5">
-        <p>No hay resultados aún. Selecciona una API y haz clic en <strong>Consultar</strong>.</p>
+    <h5 class="mb-3">Pendientes de guardar <span class="badge bg-warning text-dark">@Model.Count</span></h5>
+    <div class="row g-3 mb-4">
+        @foreach (var item in Enumerable.Reverse(Model))
+        {
+            var preview = item.Json.Length > 300 ? item.Json[..300] + "..." : item.Json;
+            <div class="col-md-6 col-lg-4">
+                <div class="card h-100 border-warning">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between mb-1">
+                            <h6 class="card-title mb-0">@item.SourceName</h6>
+                            @if (item.IsLocalUpload)
+                            {
+                                <span class="badge bg-secondary">subido</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-warning text-dark">temporal</span>
+                            }
+                        </div>
+                        <p class="text-muted small mb-1"><code>@item.Endpoint</code></p>
+                        <p class="text-muted small mb-2">@item.FetchedAt.ToString("dd MMM yyyy, HH:mm")</p>
+                        <pre id="content-@item.Id" class="bg-light p-2 rounded small mb-0" style="max-height:120px; overflow:auto;">@preview</pre>
+                    </div>
+                    <div class="card-footer bg-transparent">
+                        <div class="d-flex gap-2 flex-wrap">
+                            <form asp-action="Save" method="post" class="d-inline">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="id" value="@item.Id" />
+                                <button type="submit" class="btn btn-sm btn-success">Guardar en BD</button>
+                            </form>
+                            <a asp-action="Download" asp-route-id="@item.Id" class="btn btn-sm btn-outline-dark">Descargar</a>
+                            <button class="btn btn-sm btn-primary" onclick="playGeneratedAudio('content-@item.Id', '@item.SourceName', this)">Leer</button>
+                            <button class="btn btn-sm btn-danger" onclick="stopGeneratedAudio()">Detener</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+<!-- Ítems guardados en BD -->
+<h5 class="mb-3">Guardados en BD <span class="badge bg-success">@dbItems.Count</span></h5>
+@if (!dbItems.Any())
+{
+    <div class="text-center text-muted py-4">
+        <p>No hay ítems guardados aún. Consulta una fuente y guarda los resultados.</p>
     </div>
 }
 else
 {
     <div class="row g-3">
-        @foreach (var item in Enumerable.Reverse(Model))
+        @foreach (var item in dbItems)
         {
-            var previewText = item.Json.Length > 300 ? item.Json[..300] + "..." : item.Json;
-
+            var preview = item.Json.Length > 300 ? item.Json[..300] + "..." : item.Json;
             <div class="col-md-6 col-lg-4">
-                <div class="card h-100">
+                <div class="card h-100 border-success">
                     <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-start mb-1">
-                            <h6 class="card-title mb-0">@(item.IsLocalUpload? item.SourceName: item.SourceName)</h6>
+                        <div class="d-flex justify-content-between mb-1">
+                            <h6 class="card-title mb-0">Ítem #@item.Id</h6>
                             @if (item.IsLocalUpload)
                             {
-                                <span class="badge bg-secondary">(subido localmente)</span>
+                                <span class="badge bg-secondary">subido</span>
                             }
                             else
                             {
-                                <span class="badge bg-dark">@item.SourceName</span>
+                                <span class="badge bg-success">BD</span>
                             }
                         </div>
-
+                        <p class="text-muted small mb-1"><code>@item.Endpoint</code></p>
                         <p class="text-muted small mb-2">
-                            <code>@item.Endpoint</code>
+                            @item.CreatedAt.ToString("dd MMM yyyy, HH:mm")
+                            @if (!string.IsNullOrEmpty(item.SavedBy))
+                            {
+                                <span>&middot; @item.SavedBy</span>
+                            }
                         </p>
-
-                        <p class="card-text text-muted small mb-2">
-                            @item.RecordCount registro(s) &middot; @item.FetchedAt.ToString("dd MMM yyyy, HH:mm")
-                        </p>
-
-                        <pre id="content-@item.Id"
-                             class="bg-light p-2 rounded small mb-0"
-                             style="max-height: 120px; overflow: auto;">@previewText</pre>
+                        <pre id="db-content-@item.Id" class="bg-light p-2 rounded small mb-0" style="max-height:120px; overflow:auto;">@preview</pre>
                     </div>
-
                     <div class="card-footer bg-transparent">
-                        <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center">
-                            <div class="d-flex flex-wrap gap-2">
-                                <button type="button"
-                                        class="btn btn-sm btn-primary"
-                                        onclick="playGeneratedAudio('content-@item.Id', '@item.SourceName', this)">
-                                    Leer
-                                </button>
-
-                                <button type="button"
-                                        class="btn btn-sm btn-danger"
-                                        onclick="stopGeneratedAudio()">
-                                    Detener
-                                </button>
-                            </div>
-
-                            <a asp-action="Download" asp-route-id="@item.Id" class="btn btn-sm btn-outline-dark">
-                                Descargar JSON
-                            </a>
+                        <div class="d-flex gap-2 flex-wrap">
+                            <a asp-action="DownloadSaved" asp-route-id="@item.Id" class="btn btn-sm btn-outline-dark">Descargar</a>
+                            <button class="btn btn-sm btn-primary" onclick="playGeneratedAudio('db-content-@item.Id', 'item @item.Id', this)">Leer</button>
+                            <button class="btn btn-sm btn-danger" onclick="stopGeneratedAudio()">Detener</button>
+                            @if (User.IsInRole("Admin"))
+                            {
+                                <form asp-action="DeleteSaved" method="post" class="d-inline">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="id" value="@item.Id" />
+                                    <button type="submit" class="btn btn-sm btn-outline-danger">Eliminar</button>
+                                </form>
+                            }
                         </div>
                     </div>
                 </div>
@@ -157,115 +194,87 @@ else
 <audio id="ttsAudioPlayer" style="display:none;"></audio>
 
 @section Scripts {
-    <script>
-        const sourceSelect = document.getElementById('sourceSelect');
-        const endpointInput = document.getElementById('endpointInput');
-        const baseUrlPreview = document.getElementById('baseUrlPreview');
-        const readerLanguage = document.getElementById('readerLanguage');
-        const ttsAudioPlayer = document.getElementById('ttsAudioPlayer');
+<script>
+    const sourceSelect = document.getElementById('sourceSelect');
+    const endpointInput = document.getElementById('endpointInput');
+    const baseUrlPreview = document.getElementById('baseUrlPreview');
+    const readerLanguage = document.getElementById('readerLanguage');
+    const ttsAudioPlayer = document.getElementById('ttsAudioPlayer');
+    let currentAudioUrl = null;
+    let currentReadButton = null;
 
-        let currentAudioUrl = null;
-        let currentReadButton = null;
+    function updateFields() {
+        if (!sourceSelect) return;
+        const selected = sourceSelect.options[sourceSelect.selectedIndex];
+        endpointInput.placeholder = selected.dataset.endpoint || '/ruta';
+        endpointInput.value = '';
+        baseUrlPreview.value = selected.dataset.url || '';
+    }
 
-        function updateFields() {
-            if (!sourceSelect) return;
+    if (sourceSelect) { sourceSelect.addEventListener('change', updateFields); updateFields(); }
 
-            const selected = sourceSelect.options[sourceSelect.selectedIndex];
-            const defaultEndpoint = selected.dataset.endpoint || '';
-            const baseUrl = selected.dataset.url || '';
-
-            endpointInput.placeholder = defaultEndpoint || '/ruta/del/endpoint';
-            endpointInput.value = '';
-            baseUrlPreview.textContent = baseUrl;
+    function resetReadButton() {
+        if (currentReadButton) {
+            currentReadButton.innerText = 'Leer';
+            currentReadButton.disabled = false;
+            currentReadButton = null;
         }
+    }
 
-        if (sourceSelect) {
-            sourceSelect.addEventListener('change', updateFields);
-            updateFields();
-        }
+    async function playGeneratedAudio(elementId, sourceName, button) {
+        const element = document.getElementById(elementId);
+        if (!element) return;
 
-        function resetReadButton() {
-            if (currentReadButton) {
-                currentReadButton.innerText = 'Leer';
-                currentReadButton.disabled = false;
-                currentReadButton = null;
+        const visibleText = element.innerText.trim();
+        if (!visibleText) { alert("No hay contenido para leer."); return; }
+
+        try {
+            stopGeneratedAudio();
+            currentReadButton = button;
+            button.disabled = true;
+            button.innerText = "Generando audio...";
+
+            const fullText = `Leyendo contenido de ${sourceName}. ${visibleText}`;
+
+            const response = await fetch('/Catalog/Speak', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    text: fullText,
+                    languageCode: readerLanguage ? readerLanguage.value : 'es-ES'
+                })
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(errorText || 'No se pudo generar el audio.');
             }
-        }
 
-        async function playGeneratedAudio(elementId, sourceName, button) {
-            const element = document.getElementById(elementId);
-            if (!element) return;
+            const blob = await response.blob();
+            currentAudioUrl = URL.createObjectURL(blob);
+            ttsAudioPlayer.src = currentAudioUrl;
+            await ttsAudioPlayer.play();
+            button.innerText = 'Reproduciendo...';
 
-            const visibleText = element.innerText.trim();
-
-            if (!visibleText) {
-                alert("No hay contenido para leer.");
-                return;
-            }
-
-            try {
-                stopGeneratedAudio();
-
-                currentReadButton = button;
-                button.disabled = true;
-                button.innerText = "Generando audio...";
-
-                const intro = `Leyendo contenido de ${sourceName}.`;
-                const fullText = `${intro} ${visibleText}`;
-
-                const response = await fetch('/Catalog/Speak', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        text: fullText,
-                        languageCode: readerLanguage ? readerLanguage.value : 'es-ES'
-                    })
-                });
-
-                if (!response.ok) {
-                    const errorText = await response.text();
-                    throw new Error(errorText || 'No se pudo generar el audio.');
-                }
-
-                const blob = await response.blob();
-                currentAudioUrl = URL.createObjectURL(blob);
-
-                ttsAudioPlayer.src = currentAudioUrl;
-                await ttsAudioPlayer.play();
-
-                button.innerText = 'Reproduciendo...';
-
-                ttsAudioPlayer.onended = function () {
-                    resetReadButton();
-
-                    if (currentAudioUrl) {
-                        URL.revokeObjectURL(currentAudioUrl);
-                        currentAudioUrl = null;
-                    }
-                };
-            }
-            catch (error) {
-                alert("Error al generar el audio: " + error.message);
+            ttsAudioPlayer.onended = function () {
                 resetReadButton();
-            }
-        }
-
-        function stopGeneratedAudio() {
-            if (ttsAudioPlayer) {
-                ttsAudioPlayer.pause();
-                ttsAudioPlayer.currentTime = 0;
-                ttsAudioPlayer.removeAttribute('src');
-                ttsAudioPlayer.load();
-            }
-
-            if (currentAudioUrl) {
-                URL.revokeObjectURL(currentAudioUrl);
-                currentAudioUrl = null;
-            }
-
+                if (currentAudioUrl) { URL.revokeObjectURL(currentAudioUrl); currentAudioUrl = null; }
+            };
+        } catch (error) {
+            alert("Error al generar el audio: " + error.message);
             resetReadButton();
         }
-    </script>
+    }
+
+    function stopGeneratedAudio() {
+        if (ttsAudioPlayer) {
+            ttsAudioPlayer.pause();
+            ttsAudioPlayer.currentTime = 0;
+            ttsAudioPlayer.removeAttribute('src');
+            ttsAudioPlayer.load();
+        }
+        if (currentAudioUrl) { URL.revokeObjectURL(currentAudioUrl); currentAudioUrl = null; }
+        resetReadButton();
+    }
+</script>
 }

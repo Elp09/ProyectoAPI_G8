@@ -3,7 +3,10 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using proyecto.Core.Normalization;
+using proyecto.Core.Services;
 using proyecto.Data;
+using proyecto.Data.Repositories;
 using proyecto.Models;
 using System.Text;
 using System.Security.Claims;
@@ -112,9 +115,29 @@ builder.Services.AddSwaggerGen(options =>
 });
 
 // =====================
+// DATA DB (proyectoDbData)
+// =====================
+builder.Services.AddDbContext<DataDbContext>(options =>
+    options.UseSqlServer(
+        builder.Configuration.GetConnectionString("DataConnection")
+    )
+);
+
+// =====================
+// REPOSITORIES
+// =====================
+builder.Services.AddScoped<ISourceRepository, SourceRepository>();
+builder.Services.AddScoped<ISourceItemRepository, SourceItemRepository>();
+builder.Services.AddScoped<ISecretRepository, SecretRepository>();
+
+// =====================
 // SERVICES
 // =====================
 builder.Services.AddScoped<TokenService>();
+builder.Services.AddScoped<ISourceService, SourceService>();
+builder.Services.AddScoped<ISourceItemService, SourceItemService>();
+builder.Services.AddScoped<ISecretService, SecretService>();
+builder.Services.AddScoped<INormalizationService, NormalizationService>();
 
 var app = builder.Build();
 
@@ -142,7 +165,8 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
+if (!app.Environment.IsDevelopment())
+    app.UseHttpsRedirection();
 
 app.UseAuthentication();
 app.UseAuthorization();

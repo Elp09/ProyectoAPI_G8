@@ -87,7 +87,7 @@ public class UsersController : Controller
     {
         var client = _httpClientFactory.CreateClient("Api");
 
-        var token = User.Claims.FirstOrDefault(c => c.Type == "JWToken")?.Value;
+        var token = HttpContext.Session.GetString("JWToken");
 
         if (string.IsNullOrEmpty(token))
             throw new Exception("Token no encontrado en los claims.");
