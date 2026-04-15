@@ -1,0 +1,93 @@
+@{
+    ViewData["Title"] = "Inicio";
+}
+
+<style>
+    body { background: #fff; }
+
+    .landing-hero {
+        min-height: 80vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 2rem;
+    }
+
+    .landing-course {
+        font-size: 0.8rem;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: #adb5bd;
+        font-weight: 600;
+        margin-bottom: 1rem;
+    }
+
+    .landing-title {
+        font-size: 3rem;
+        font-weight: 700;
+        color: #212529;
+        margin-bottom: 0;
+    }
+
+    .landing-divider {
+        width: 40px;
+        border: 2px solid #212529;
+        margin: 1.5rem auto;
+        opacity: 1;
+    }
+
+    .landing-members-label {
+        font-size: 0.7rem;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: #adb5bd;
+        margin-bottom: 0.75rem;
+    }
+
+    .landing-members {
+        list-style: none;
+        padding: 0;
+        margin: 0 0 2.5rem 0;
+    }
+
+    .landing-members li {
+        font-size: 1rem;
+        color: #495057;
+        padding: 0.2rem 0;
+    }
+
+    .btn-landing {
+        background: #212529;
+        border: none;
+        color: #fff;
+        font-weight: 600;
+        font-size: 0.95rem;
+        padding: 0.65rem 2.5rem;
+        border-radius: 6px;
+        text-decoration: none;
+        transition: background 0.15s;
+    }
+
+    .btn-landing:hover {
+        background: #343a40;
+        color: #fff;
+    }
+</style>
+
+<div class="landing-hero">
+    <p class="landing-course">SC-701 Programación Avanzada Web</p>
+    <h1 class="landing-title">API Ingestor</h1>
+    <hr class="landing-divider" />
+    <p class="landing-members-label">Integrantes del grupo</p>
+    <ul class="landing-members">
+        <li>Víctor Ortiz</li>
+        <li>Pedro Centeno</li>
+        <li>Elias Leblicq</li>
+        <li>Charlotte Alfaro</li>
+    </ul>
+    <a asp-controller="Account" asp-action="Login" class="btn-landing">
+        Iniciar sesión
+    </a>
+</div>

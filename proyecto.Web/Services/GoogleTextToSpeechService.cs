@@ -1,4 +1,5 @@
 ﻿using Google.Cloud.TextToSpeech.V1;
+using Microsoft.Extensions.Configuration;
 
 namespace proyecto.Web.Services;
 
@@ -6,9 +7,10 @@ public class GoogleTextToSpeechService
 {
     private readonly TextToSpeechClient _client;
 
-    public GoogleTextToSpeechService()
+    public GoogleTextToSpeechService(IConfiguration configuration)
     {
-        _client = TextToSpeechClient.Create();
+        var apiKey = configuration["GoogleTTS:ApiKey"];
+        _client = new TextToSpeechClientBuilder { ApiKey = apiKey }.Build();
     }
 
     public async Task<byte[]> GenerateSpeechAsync(string text, string languageCode)
@@ -39,9 +41,9 @@ public class GoogleTextToSpeechService
 
             return response.AudioContent.ToByteArray();
         }
-        catch
+        catch (Exception ex)
         {
-            return null;
+            throw new Exception($"Google TTS error: {ex.Message}", ex);
         }
     }
 }
