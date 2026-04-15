@@ -1,0 +1,241 @@
+@model List<proyecto.Web.Models.CatalogCardVm>
+@{
+    ViewData["Title"] = "Catálogo";
+    var sources = ViewBag.Sources as List<proyecto.Web.Models.ApiSource> ?? new();
+}
+
+<style>
+    body { overflow: hidden; }
+
+    .catalog-page {
+        display: flex;
+        flex-direction: column;
+        height: calc(100vh - 70px); /* debajo del navbar */
+    }
+
+    .catalog-topbar {
+        flex-shrink: 0;
+        padding-bottom: 0.75rem;
+        border-bottom: 1px solid #dee2e6;
+        margin-bottom: 0.75rem;
+    }
+
+    .filter-bar { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; }
+
+    .btn-filter {
+        border: 1px solid #dee2e6;
+        background: #fff;
+        color: #495057;
+        border-radius: 20px;
+        padding: 0.25rem 0.9rem;
+        font-size: 0.8rem;
+        cursor: pointer;
+        transition: all 0.15s;
+    }
+    .btn-filter:hover, .btn-filter.active {
+        background: #212529;
+        border-color: #212529;
+        color: #fff;
+    }
+
+    .catalog-scroll {
+        flex: 1;
+        overflow-y: auto;
+        padding-right: 4px;
+    }
+
+    .catalog-card {
+        background: #fff;
+        border: 1px solid #dee2e6;
+        border-top: 3px solid #212529;
+        border-radius: 6px;
+        padding: 1rem;
+    }
+
+    .catalog-fields {
+        max-height: 180px;
+        overflow: hidden;
+        transition: max-height 0.3s ease;
+        position: relative;
+    }
+
+    .catalog-fields.expanded {
+        max-height: 2000px;
+    }
+
+    .catalog-fields:not(.expanded)::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 48px;
+        background: linear-gradient(transparent, #fff);
+    }
+
+    .btn-toggle {
+        background: none;
+        border: none;
+        color: #adb5bd;
+        font-size: 0.75rem;
+        cursor: pointer;
+        padding: 0.25rem 0;
+        margin-top: 0.25rem;
+        display: block;
+        width: 100%;
+        text-align: left;
+        transition: color 0.15s;
+    }
+    .btn-toggle:hover { color: #212529; }
+
+    .catalog-source-badge {
+        font-size: 0.7rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: #495057;
+    }
+
+    .catalog-date { font-size: 0.72rem; color: #adb5bd; }
+
+    .catalog-field { margin-bottom: 0.5rem; }
+
+    .catalog-label {
+        display: block;
+        font-size: 0.65rem;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: #adb5bd;
+        margin-bottom: 0.1rem;
+    }
+
+    .catalog-value {
+        font-size: 0.88rem;
+        color: #212529;
+        word-break: break-word;
+    }
+
+    .btn-reload {
+        border: 1px solid #212529;
+        background: #fff;
+        color: #212529;
+        border-radius: 6px;
+        padding: 0.3rem 0.9rem;
+        font-size: 0.85rem;
+        cursor: pointer;
+        transition: all 0.15s;
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+    }
+    .btn-reload:hover { background: #212529; color: #fff; }
+
+    .spinning { animation: spin 0.7s linear infinite; }
+    @@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+    .empty-state { text-align: center; padding: 4rem 2rem; color: #adb5bd; }
+</style>
+
+<div class="catalog-page">
+
+    <div class="catalog-topbar">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <h4 class="mb-0">Catálogo</h4>
+            <button class="btn-reload" onclick="reloadCatalog(this)">
+                <i class="bi bi-arrow-clockwise" id="reload-icon"></i>
+                Actualizar
+            </button>
+        </div>
+
+        @if (Model.Any())
+        {
+            <div class="filter-bar">
+                <button class="btn-filter active" data-filter="all">Todos (@Model.Count)</button>
+                @foreach (var source in sources)
+                {
+                    var count = Model.Count(c => c.SourceId == source.Id);
+                    if (count > 0)
+                    {
+                        <button class="btn-filter" data-filter="@source.Id">@source.Name (@count)</button>
+                    }
+                }
+            </div>
+        }
+    </div>
+
+    <div class="catalog-scroll">
+        @if (!Model.Any())
+        {
+            <div class="empty-state">
+                <i class="bi bi-inbox fs-1 d-block mb-3"></i>
+                <p>No hay ítems guardados aún.</p>
+            </div>
+        }
+        else
+        {
+            <div class="row g-3" id="catalog-grid">
+                @foreach (var card in Model)
+                {
+                    <div class="col-md-6 col-lg-4 catalog-item" data-source="@card.SourceId">
+                        <div class="catalog-card">
+
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <span class="catalog-source-badge">@card.SourceName</span>
+                                <span class="catalog-date">@card.CreatedAt.ToString("dd MMM yyyy")</span>
+                            </div>
+
+                            <div class="catalog-fields" id="fields-@card.Id">
+                                @foreach (var field in card.Fields.Where(f => !f.IsSection))
+                                {
+                                    <div class="catalog-field">
+                                        <span class="catalog-label">@field.Label</span>
+                                        <span class="catalog-value">@field.Value</span>
+                                    </div>
+                                }
+                            </div>
+                            <button class="btn-toggle" onclick="toggleCard('fields-@card.Id', this)">
+                                ▾ Ver más
+                            </button>
+
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+
+</div>
+
+@section Scripts {
+<script>
+    document.querySelectorAll('.btn-filter').forEach(btn => {
+        btn.addEventListener('click', function () {
+            document.querySelectorAll('.btn-filter').forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            const filter = this.dataset.filter;
+            document.querySelectorAll('.catalog-item').forEach(item => {
+                item.style.display = filter === 'all' || item.dataset.source === filter ? '' : 'none';
+            });
+        });
+    });
+
+    function reloadCatalog(btn) {
+        document.getElementById('reload-icon').classList.add('spinning');
+        btn.disabled = true;
+        window.location.reload();
+    }
+
+    function toggleCard(id, btn) {
+        const fields = document.getElementById(id);
+        const expanded = fields.classList.toggle('expanded');
+        btn.textContent = expanded ? '▴ Ver menos' : '▾ Ver más';
+    }
+
+    // Ocultar el botón en cards que no necesitan expandirse
+    document.querySelectorAll('.catalog-fields').forEach(el => {
+        if (el.scrollHeight <= el.clientHeight) {
+            el.nextElementSibling.style.display = 'none';
+        }
+    });
+</script>
+}

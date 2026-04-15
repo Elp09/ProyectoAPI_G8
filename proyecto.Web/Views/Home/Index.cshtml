@@ -69,7 +69,7 @@
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <strong>Ítems recientes</strong>
-                <a asp-controller="Catalog" asp-action="Index" class="btn btn-sm btn-outline-dark">Ver todo</a>
+                <a asp-controller="Home" asp-action="Catalog" class="btn btn-sm btn-outline-dark">Ver catálogo</a>
             </div>
             <ul class="list-group list-group-flush">
                 @if (ViewBag.RecentItems == null || ((List<proyecto.Web.Models.SavedItemDto>)ViewBag.RecentItems).Count == 0)

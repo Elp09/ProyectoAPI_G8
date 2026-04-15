@@ -1,61 +1,114 @@
-@* @{
-    ViewData["Title"] = "Registro";
-    Layout = "_AuthLayout";
-}
-
-<div class="card shadow-sm">
-    <div class="card-body p-4">
-        <h3 class="text-center mb-4">API Ingestor</h3>
-        <h5 class="text-center text-muted mb-4">Cree su cuenta</h5>
-
-        <form>
-            <div class="mb-3">
-                <label for="fullName" class="form-label">Nombre completo</label>
-                <input type="text" class="form-control" id="fullName" placeholder="Juan Pérez" />
-            </div>
-            <div class="mb-3">
-                <label for="email" class="form-label">Correo electrónico</label>
-                <input type="email" class="form-control" id="email" placeholder="tu@ejemplo.com" />
-            </div>
-            <div class="mb-3">
-                <label for="password" class="form-label">Contraseña</label>
-                <input type="password" class="form-control" id="password" placeholder="Contraseña" />
-            </div>
-            <div class="mb-3">
-                <label for="confirmPassword" class="form-label">Confirmar contraseña</label>
-                <input type="password" class="form-control" id="confirmPassword" placeholder="Confirmar contraseña" />
-            </div>
-            <div class="d-grid">
-                <a asp-controller="Account" asp-action="Login" class="btn btn-dark">Registrarse</a>
-            </div>
-        </form>
-
-        <hr />
-        <p class="text-center mb-0">
-            ¿Ya tiene una cuenta? <a asp-controller="Account" asp-action="Login">Iniciar sesión</a>
-        </p>
-    </div>
-</div> *@
 @{
-    ViewData["Title"] = "Register";
+    ViewData["Title"] = "Registrarse";
 }
 
-<div class="d-flex flex-column justify-content-center align-items-center vh-100 bg-light">
-    <div class="card p-4 shadow" style="width: 100%; max-width: 400px;">
-        <h2 class="mb-3 text-center">Register</h2>
+<style>
+    body { background: #fff; }
+
+    .auth-wrapper {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 70vh;
+        padding: 2rem 1rem;
+    }
+
+    .auth-card {
+        width: 100%;
+        max-width: 380px;
+        border: 1px solid #dee2e6;
+        border-top: 3px solid #212529;
+        border-radius: 6px;
+        padding: 2rem;
+    }
+
+    .auth-title {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: #212529;
+        margin-bottom: 0.25rem;
+    }
+
+    .auth-subtitle {
+        font-size: 0.8rem;
+        color: #adb5bd;
+        margin-bottom: 1.75rem;
+    }
+
+    .form-label {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: #adb5bd;
+        margin-bottom: 0.3rem;
+    }
+
+    .form-control {
+        border: 1px solid #dee2e6;
+        border-radius: 4px;
+        font-size: 0.9rem;
+        padding: 0.5rem 0.75rem;
+        color: #212529;
+    }
+
+    .form-control:focus {
+        border-color: #212529;
+        box-shadow: none;
+    }
+
+    .btn-auth {
+        background: #212529;
+        border: none;
+        color: #fff;
+        font-weight: 600;
+        font-size: 0.9rem;
+        padding: 0.6rem;
+        border-radius: 4px;
+        width: 100%;
+        transition: background 0.15s;
+        cursor: pointer;
+    }
+
+    .btn-auth:hover { background: #343a40; }
+
+    .auth-footer {
+        text-align: center;
+        font-size: 0.82rem;
+        color: #adb5bd;
+        margin-top: 1.25rem;
+    }
+
+    .auth-footer a { color: #212529; font-weight: 600; text-decoration: none; }
+    .auth-footer a:hover { text-decoration: underline; }
+</style>
+
+<div class="auth-wrapper">
+    <div class="auth-card">
+        <p class="auth-title">Crear cuenta</p>
+        <p class="auth-subtitle">API Ingestor</p>
+
         <form method="post" asp-action="Register">
             <div class="mb-3">
-                <label for="registerEmail" class="form-label">Email</label>
-                <input type="email" class="form-control form-control-lg" id="registerEmail" name="email" placeholder="tu@correo.com" required />
+                <label class="form-label">Correo electrónico</label>
+                <input type="email" class="form-control" name="email" placeholder="tu@correo.com" required />
             </div>
-            <div class="mb-3">
-                <label for="registerPassword" class="form-label">Password</label>
-                <input type="password" class="form-control form-control-lg" id="registerPassword" name="password" placeholder="Contraseña" required />
+            <div class="mb-4">
+                <label class="form-label">Contraseña</label>
+                <input type="password" class="form-control" name="password" placeholder="••••••••" required />
             </div>
-            <div class="mb-3 text-danger">
-                <div asp-validation-summary="All"></div>
-            </div>
-            <button type="submit" class="btn btn-success w-100 btn-lg">Register</button>
+
+            @if (!ViewData.ModelState.IsValid)
+            {
+                <div class="mb-3 text-danger" style="font-size:0.82rem;">
+                    <div asp-validation-summary="All"></div>
+                </div>
+            }
+
+            <button type="submit" class="btn-auth">Registrarse</button>
         </form>
+
+        <p class="auth-footer">
+            ¿Ya tenés cuenta? <a asp-controller="Account" asp-action="Login">Iniciar sesión</a>
+        </p>
     </div>
 </div>
