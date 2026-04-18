@@ -94,56 +94,14 @@ public class HomeController : Controller
         try
         {
             using var doc = JsonDocument.Parse(json);
-            var root = doc.RootElement;
-
-            bool isIngestDocument = TryGetPropCI(root, "schemaVersion", out var sv)
-                && sv.GetString() == "edu.univ.ingest.v1";
-
-            if (isIngestDocument)
-            {
-                if (TryGetPropCI(root, "raw", out var raw) &&
-                    TryGetPropCI(raw, "data", out var data) &&
-                    TryGetPropCI(data, "original", out var original))
-                {
-                    if (original.ValueKind == JsonValueKind.Object)
-                    {
-                        var fields = new List<CardField>();
-                        FlattenElement(original, fields, new HashSet<string>());
-                        return fields;
-                    }
-
-                    if (original.ValueKind == JsonValueKind.String)
-                        return new List<CardField> { new CardField { Label = "Contenido", Value = original.GetString() } };
-                }
-
-                return new List<CardField> { new CardField { Label = "Sin contenido", Value = "—" } };
-            }
-
-            // JSON libre: aplanar todo
-            {
-                var fields = new List<CardField>();
-                FlattenElement(root, fields, new HashSet<string>());
-                return fields;
-            }
+            var fields = new List<CardField>();
+            FlattenElement(doc.RootElement, fields, new HashSet<string>());
+            return fields;
         }
         catch
         {
             return new List<CardField> { new CardField { Label = "Contenido", Value = json } };
         }
-    }
-
-    private static bool TryGetPropCI(JsonElement el, string name, out JsonElement value)
-    {
-        foreach (var prop in el.EnumerateObject())
-        {
-            if (string.Equals(prop.Name, name, StringComparison.OrdinalIgnoreCase))
-            {
-                value = prop.Value;
-                return true;
-            }
-        }
-        value = default;
-        return false;
     }
 
     // Recursively extracts every primitive from any JSON structure.

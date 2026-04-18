@@ -96,11 +96,17 @@
         @foreach (var item in Enumerable.Reverse(Model))
         {
             var preview = item.Json.Length > 300 ? item.Json[..300] + "..." : item.Json;
+            var isHtmlError = item.Json.TrimStart().StartsWith("<");
             <div class="col-md-6 col-lg-4">
-                <div class="card h-100 border-warning">
+                <div class="card h-100 @(isHtmlError ? "border-danger" : "border-warning")">
                     <div class="card-body">
                         <div class="d-flex justify-content-between mb-1">
                             <h6 class="card-title mb-0">@item.SourceName</h6>
+                            <div class="d-flex gap-1">
+                            @if (isHtmlError)
+                            {
+                                <span class="badge bg-danger">error al ingestar</span>
+                            }
                             @if (item.IsLocalUpload)
                             {
                                 <span class="badge bg-secondary">subido</span>
@@ -109,6 +115,7 @@
                             {
                                 <span class="badge bg-warning text-dark">temporal</span>
                             }
+                            </div>
                         </div>
                         <p class="text-muted small mb-1"><code>@item.Endpoint</code></p>
                         <p class="text-muted small mb-2">@item.FetchedAt.ToString("dd MMM yyyy, HH:mm")</p>
@@ -122,6 +129,7 @@
                                 <button type="submit" class="btn btn-sm btn-success">Guardar en BD</button>
                             </form>
                             <a asp-action="Download" asp-route-id="@item.Id" class="btn btn-sm btn-outline-dark">Descargar</a>
+                            <button class="btn btn-sm btn-secondary" onclick="showJson('temp-@item.Id', '@item.SourceName')">Ver JSON</button>
                             <button class="btn btn-sm btn-primary" onclick="playGeneratedAudio('content-@item.Id', '@item.SourceName', this)">Leer</button>
                             <button class="btn btn-sm btn-danger" onclick="stopGeneratedAudio()">Detener</button>
                         </div>
@@ -146,11 +154,17 @@ else
         @foreach (var item in dbItems)
         {
             var preview = item.Json.Length > 300 ? item.Json[..300] + "..." : item.Json;
+            var isHtmlError = item.Json.TrimStart().StartsWith("<");
             <div class="col-md-6 col-lg-4">
-                <div class="card h-100 border-success">
+                <div class="card h-100 @(isHtmlError ? "border-danger" : "border-success")">
                     <div class="card-body">
                         <div class="d-flex justify-content-between mb-1">
                             <h6 class="card-title mb-0">Ítem #@item.Id</h6>
+                            <div class="d-flex gap-1">
+                            @if (isHtmlError)
+                            {
+                                <span class="badge bg-danger">error al ingestar</span>
+                            }
                             @if (item.IsLocalUpload)
                             {
                                 <span class="badge bg-secondary">subido</span>
@@ -159,6 +173,7 @@ else
                             {
                                 <span class="badge bg-success">BD</span>
                             }
+                            </div>
                         </div>
                         <p class="text-muted small mb-1"><code>@item.Endpoint</code></p>
                         <p class="text-muted small mb-2">
@@ -173,6 +188,7 @@ else
                     <div class="card-footer bg-transparent">
                         <div class="d-flex gap-2 flex-wrap">
                             <a asp-action="DownloadSaved" asp-route-id="@item.Id" class="btn btn-sm btn-outline-dark">Descargar</a>
+                            <button class="btn btn-sm btn-secondary" onclick="showJson('db-@item.Id', 'Ítem #@item.Id')">Ver JSON</button>
                             <button class="btn btn-sm btn-primary" onclick="playGeneratedAudio('db-content-@item.Id', 'item @item.Id', this)">Leer</button>
                             <button class="btn btn-sm btn-danger" onclick="stopGeneratedAudio()">Detener</button>
                             @if (User.IsInRole("Admin"))
@@ -190,6 +206,21 @@ else
         }
     </div>
 }
+
+<!-- JSON viewer modal -->
+<div class="modal fade" id="jsonModal" tabindex="-1">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="jsonModalLabel">JSON</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-0">
+                <pre id="jsonModalContent" class="m-0 p-3 bg-light" style="font-size:0.8rem; white-space:pre; overflow:auto; max-height:75vh;"></pre>
+            </div>
+        </div>
+    </div>
+</div>
 
 <audio id="ttsAudioPlayer" style="display:none;"></audio>
 
@@ -264,6 +295,27 @@ else
             alert("Error al generar el audio: " + error.message);
             resetReadButton();
         }
+    }
+
+    const _jsonData = {};
+    @foreach (var item in Model)
+    {
+        <text>_jsonData['temp-@item.Id'] = @Html.Raw(Json.Serialize(item.Json));</text>
+    }
+    @foreach (var item in dbItems)
+    {
+        <text>_jsonData['db-@item.Id'] = @Html.Raw(Json.Serialize(item.Json));</text>
+    }
+
+    function showJson(key, title) {
+        const raw = _jsonData[key] ?? '';
+        try {
+            document.getElementById('jsonModalContent').textContent = JSON.stringify(JSON.parse(raw), null, 2);
+        } catch {
+            document.getElementById('jsonModalContent').textContent = raw;
+        }
+        document.getElementById('jsonModalLabel').textContent = title;
+        new bootstrap.Modal(document.getElementById('jsonModal')).show();
     }
 
     function stopGeneratedAudio() {

@@ -1,4 +1,3 @@
-using proyecto.Core.Schema;
 using proyecto.Models;
 
 namespace proyecto.Core.Services;
@@ -10,9 +9,9 @@ public interface ISourceItemService
     Task<IEnumerable<SourceItem>> GetBySourceIdAsync(int sourceId);
 
     /// <summary>
-    /// Guarda un IngestDocument ya normalizado en la base de datos.
+    /// Guarda JSON crudo en la base de datos tal como está.
     /// </summary>
-    Task<SourceItem> SaveAsync(IngestDocument document, int sourceId, string? endpoint, bool isLocalUpload, string? savedBy);
+    Task<SourceItem> SaveAsync(string rawJson, int sourceId, string? endpoint, bool isLocalUpload, string? savedBy);
 
     Task DeleteAsync(int id);
 }
