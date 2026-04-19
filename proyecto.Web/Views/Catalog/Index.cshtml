@@ -45,14 +45,17 @@
                     <select name="sourceId" id="sourceSelect" class="form-select">
                         @foreach (var s in sources)
                         {
-                            <option value="@s.Id" data-endpoint="@s.Endpoint" data-url="@s.Url">@s.Name</option>
+                            <option value="@s.Id" data-endpoint="@s.Endpoint" data-url="@s.Url" data-authtype="@s.AuthType">@s.Name</option>
                         }
                     </select>
                 </div>
                 <div class="col-md-5">
                     <label class="form-label fw-semibold">Endpoint</label>
                     <input type="text" class="form-control form-control-sm bg-light text-muted mb-1" id="baseUrlPreview" readonly tabindex="-1" />
-                    <input type="text" class="form-control" name="endpointOverride" id="endpointInput" placeholder="/ruta" />
+                    <div class="input-group">
+                        <input type="text" class="form-control" name="endpointOverride" id="endpointInput" placeholder="/ruta" />
+                        <button type="button" class="btn btn-outline-secondary" id="insertSecretBtn" style="display:none;" onclick="insertSecret()" title="Insertar {secret}"><code>{secret}</code></button>
+                    </div>
                 </div>
                 <div class="col-md-3 d-flex align-items-end">
                     <button type="submit" class="btn btn-dark w-100">Consultar</button>
@@ -92,7 +95,8 @@
 @if (Model.Any())
 {
     <h5 class="mb-3">Pendientes de guardar <span class="badge bg-warning text-dark">@Model.Count</span></h5>
-    <div class="row g-3 mb-4">
+    <div class="overflow-auto mb-4" style="max-height: 480px;">
+    <div class="row g-3">
         @foreach (var item in Enumerable.Reverse(Model))
         {
             var preview = item.Json.Length > 300 ? item.Json[..300] + "..." : item.Json;
@@ -131,12 +135,18 @@
                             <a asp-action="Download" asp-route-id="@item.Id" class="btn btn-sm btn-outline-dark">Descargar</a>
                             <button class="btn btn-sm btn-secondary" onclick="showJson('temp-@item.Id', '@item.SourceName')">Ver JSON</button>
                             <button class="btn btn-sm btn-primary" onclick="playGeneratedAudio('content-@item.Id', '@item.SourceName', this)">Leer</button>
-                            <button class="btn btn-sm btn-danger" onclick="stopGeneratedAudio()">Detener</button>
+                            <button class="btn btn-sm btn-outline-secondary" onclick="stopGeneratedAudio()">Detener</button>
+                            <form asp-action="DeleteTemp" method="post" class="d-inline">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="id" value="@item.Id" />
+                                <button type="submit" class="btn btn-sm btn-danger">Eliminar</button>
+                            </form>
                         </div>
                     </div>
                 </div>
             </div>
         }
+    </div>
     </div>
 }
 
@@ -150,6 +160,7 @@
 }
 else
 {
+    <div class="overflow-auto" style="max-height: 480px;">
     <div class="row g-3">
         @foreach (var item in dbItems)
         {
@@ -205,6 +216,7 @@ else
             </div>
         }
     </div>
+    </div>
 }
 
 <!-- JSON viewer modal -->
@@ -234,12 +246,25 @@ else
     let currentAudioUrl = null;
     let currentReadButton = null;
 
+    const insertSecretBtn = document.getElementById('insertSecretBtn');
+
     function updateFields() {
         if (!sourceSelect) return;
         const selected = sourceSelect.options[sourceSelect.selectedIndex];
         endpointInput.placeholder = selected.dataset.endpoint || '/ruta';
         endpointInput.value = '';
         baseUrlPreview.value = selected.dataset.url || '';
+        const isQuery = selected.dataset.authtype === 'query';
+        if (insertSecretBtn) insertSecretBtn.style.display = isQuery ? 'block' : 'none';
+    }
+
+    function insertSecret() {
+        const start = endpointInput.selectionStart;
+        const end = endpointInput.selectionEnd;
+        const val = endpointInput.value;
+        endpointInput.value = val.slice(0, start) + '{secret}' + val.slice(end);
+        endpointInput.focus();
+        endpointInput.selectionStart = endpointInput.selectionEnd = start + '{secret}'.length;
     }
 
     if (sourceSelect) { sourceSelect.addEventListener('change', updateFields); updateFields(); }

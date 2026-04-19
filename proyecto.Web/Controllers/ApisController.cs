@@ -39,7 +39,7 @@ public class ApisController : Controller
     [Authorize(Roles = "Admin")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Add(string name, string url, string? description,
-        string? secret, string? endpoint)
+        string? secret, string? authType, string? endpoint)
     {
         var client = CreateClientWithToken();
 
@@ -50,7 +50,7 @@ public class ApisController : Controller
             description,
             componentType = "api",
             requiresSecret = !string.IsNullOrWhiteSpace(secret),
-            authType = "bearer",
+            authType = string.IsNullOrWhiteSpace(secret) ? "none" : (authType ?? "query"),
             endpoint
         };
 

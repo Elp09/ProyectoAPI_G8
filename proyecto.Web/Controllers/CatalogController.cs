@@ -87,9 +87,19 @@ public class CatalogController : Controller
 
         // Llamar a la fuente externa
         var externalClient = _httpClientFactory.CreateClient();
-        var request = new HttpRequestMessage(HttpMethod.Get, requestUrl);
 
         if (!string.IsNullOrWhiteSpace(secret))
+        {
+            if (source.AuthType == "query")
+                requestUrl = requestUrl.Replace("{secret}", Uri.EscapeDataString(secret));
+            else
+                requestUrl = requestUrl.Replace("{secret}", Uri.EscapeDataString(secret));
+        }
+
+        var request = new HttpRequestMessage(HttpMethod.Get, requestUrl);
+        request.Headers.TryAddWithoutValidation("User-Agent", "ProyectoAPI_G8/1.0");
+
+        if (!string.IsNullOrWhiteSpace(secret) && source.AuthType == "header")
             request.Headers.TryAddWithoutValidation("Authorization", $"Bearer {secret}");
 
         HttpResponseMessage externalResponse;
@@ -102,18 +112,23 @@ public class CatalogController : Controller
 
         var rawJson = await externalResponse.Content.ReadAsStringAsync();
 
-        // Guardar el JSON crudo directamente en memoria, sin normalizar
-        _store.Items.Add(new IngestedItem
+        var items = ExtractItems(rawJson);
+        foreach (var itemJson in items)
         {
-            SourceId      = sourceId,
-            SourceName    = source.Name,
-            Endpoint      = endpoint,
-            IsLocalUpload = false,
-            FetchedAt     = DateTime.Now,
-            Json          = rawJson
-        });
+            _store.Items.Add(new IngestedItem
+            {
+                SourceId      = sourceId,
+                SourceName    = source.Name,
+                Endpoint      = endpoint,
+                IsLocalUpload = false,
+                FetchedAt     = DateTime.Now,
+                Json          = itemJson
+            });
+        }
 
-        TempData["Success"] = "Ítem ingestado. Guárdalo en la BD cuando estés listo.";
+        TempData["Success"] = items.Count == 1
+            ? "Ítem ingestado. Guárdalo en la BD cuando estés listo."
+            : $"{items.Count} ítems ingestados. Guárdalos en la BD cuando estés listo.";
         return RedirectToAction(nameof(Index));
     }
 
@@ -189,6 +204,15 @@ public class CatalogController : Controller
 
         _store.Items.Remove(item);
         TempData["Success"] = "Ítem guardado en la base de datos.";
+        return RedirectToAction(nameof(Index));
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public IActionResult DeleteTemp(Guid id)
+    {
+        var item = _store.Items.FirstOrDefault(i => i.Id == id);
+        if (item != null) _store.Items.Remove(item);
         return RedirectToAction(nameof(Index));
     }
 
@@ -271,6 +295,33 @@ public class CatalogController : Controller
         if (docs.Count == 1) return docs[0];
         if (docs.Count > 1)  return "[" + string.Join(",", docs) + "]";
         return rawJson;
+    }
+
+    private static List<string> ExtractItems(string json)
+    {
+        try
+        {
+            using var doc = JsonDocument.Parse(json);
+            var root = doc.RootElement;
+
+            if (root.ValueKind == JsonValueKind.Array)
+                return root.EnumerateArray().Select(e => e.GetRawText()).ToList();
+
+            if (root.ValueKind == JsonValueKind.Object)
+            {
+                foreach (var prop in root.EnumerateObject())
+                {
+                    if (prop.Value.ValueKind == JsonValueKind.Array)
+                    {
+                        var elements = prop.Value.EnumerateArray().Select(e => e.GetRawText()).ToList();
+                        if (elements.Count > 0) return elements;
+                    }
+                }
+            }
+        }
+        catch { }
+
+        return new List<string> { json };
     }
 
     private static bool IsIngestDocument(string json)
