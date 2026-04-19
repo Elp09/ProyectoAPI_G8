@@ -134,7 +134,7 @@ public class CatalogController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Upload(IFormFile file, int sourceId)
+    public async Task<IActionResult> Upload(IFormFile file, string? uploadSourceName)
     {
         if (file == null || file.Length == 0)
         {
@@ -142,30 +142,17 @@ public class CatalogController : Controller
             return RedirectToAction(nameof(Index));
         }
 
-        var client = CreateClientWithToken();
-
-        var sourceResponse = await client.GetAsync($"api/sources/{sourceId}");
-        if (!sourceResponse.IsSuccessStatusCode)
-        {
-            TempData["Error"] = "Fuente no encontrada.";
-            return RedirectToAction(nameof(Index));
-        }
-
-        var source = JsonSerializer.Deserialize<ApiSource>(
-            await sourceResponse.Content.ReadAsStringAsync(), _json)!;
-
         using var reader = new StreamReader(file.OpenReadStream());
         var uploadedJson = await reader.ReadToEndAsync();
 
-        // Si ya sigue nuestro estándar, desnormalizar y guardar el crudo; si no, guardar tal cual
         var jsonToStore = IsIngestDocument(uploadedJson)
             ? ExtractOriginal(uploadedJson) ?? uploadedJson
             : uploadedJson;
 
         _store.Items.Add(new IngestedItem
         {
-            SourceId      = sourceId,
-            SourceName    = source.Name,
+            SourceId      = 0,
+            SourceName    = string.IsNullOrWhiteSpace(uploadSourceName) ? "Subida manual" : uploadSourceName,
             Endpoint      = file.FileName,
             IsLocalUpload = true,
             FetchedAt     = DateTime.Now,
@@ -188,6 +175,12 @@ public class CatalogController : Controller
             return RedirectToAction(nameof(Index));
         }
 
+        if (item.SourceId == 0)
+        {
+            TempData["Error"] = "Este ítem fue subido sin fuente. Elimínalo y súbelo de nuevo asociándolo a una fuente existente.";
+            return RedirectToAction(nameof(Index));
+        }
+
         var client = CreateClientWithToken();
         var payload = new { rawJson = item.Json, endpoint = item.Endpoint, isLocalUpload = item.IsLocalUpload };
 
@@ -204,6 +197,15 @@ public class CatalogController : Controller
 
         _store.Items.Remove(item);
         TempData["Success"] = "Ítem guardado en la base de datos.";
+        return RedirectToAction(nameof(Index));
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public IActionResult ClearMemory()
+    {
+        _store.Items.Clear();
+        TempData["Success"] = "Memoria limpiada.";
         return RedirectToAction(nameof(Index));
     }
 

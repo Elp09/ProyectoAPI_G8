@@ -72,13 +72,8 @@
         <form asp-action="Upload" method="post" enctype="multipart/form-data" class="row g-2">
             @Html.AntiForgeryToken()
             <div class="col-md-4">
-                <label class="form-label fw-semibold">Fuente destino</label>
-                <select name="sourceId" class="form-select">
-                    @foreach (var s in sources)
-                    {
-                        <option value="@s.Id">@s.Name</option>
-                    }
-                </select>
+                <label class="form-label fw-semibold">Nombre de fuente <span class="text-muted fw-normal">(opcional)</span></label>
+                <input type="text" class="form-control" name="uploadSourceName" placeholder="Ej: Mis noticias" />
             </div>
             <div class="col-md-5">
                 <label class="form-label fw-semibold">Archivo</label>
@@ -94,7 +89,10 @@
 <!-- Ítems temporales (no guardados) -->
 @if (Model.Any())
 {
-    <h5 class="mb-3">Pendientes de guardar <span class="badge bg-warning text-dark">@Model.Count</span></h5>
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="mb-0">Pendientes de guardar <span class="badge bg-warning text-dark">@Model.Count</span></h5>
+        <button class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#clearMemoryModal">Limpiar memoria</button>
+    </div>
     <div class="overflow-auto mb-4" style="max-height: 480px;">
     <div class="row g-3">
         @foreach (var item in Enumerable.Reverse(Model))
@@ -218,6 +216,28 @@ else
     </div>
     </div>
 }
+
+<!-- Clear memory confirmation modal -->
+<div class="modal fade" id="clearMemoryModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Limpiar memoria</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                ¿Estás seguro? Se eliminarán todos los ítems pendientes que no han sido guardados en la base de datos.
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <form asp-action="ClearMemory" method="post" class="d-inline">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-danger">Limpiar</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
 
 <!-- JSON viewer modal -->
 <div class="modal fade" id="jsonModal" tabindex="-1">
