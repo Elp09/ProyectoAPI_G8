@@ -16,7 +16,7 @@ public class HomeController : Controller
     public IActionResult Landing()
     {
         if (User.Identity?.IsAuthenticated == true)
-            return RedirectToAction(nameof(Index));
+            return RedirectToAction(nameof(Catalog));
 
         return View();
     }
@@ -31,32 +31,7 @@ public class HomeController : Controller
         _httpClientFactory = httpClientFactory;
     }
 
-    public async Task<IActionResult> Index()
-    {
-        var client = CreateClientWithToken();
-
-        // Cargar fuentes
-        var sourcesResponse = await client.GetAsync("api/sources");
-        var sources = sourcesResponse.IsSuccessStatusCode
-            ? JsonSerializer.Deserialize<List<ApiSource>>(
-                await sourcesResponse.Content.ReadAsStringAsync(), _json) ?? new()
-            : new List<ApiSource>();
-
-        // Cargar ítems guardados
-        var itemsResponse = await client.GetAsync("api/sourceitems");
-        var items = itemsResponse.IsSuccessStatusCode
-            ? JsonSerializer.Deserialize<List<SavedItemDto>>(
-                await itemsResponse.Content.ReadAsStringAsync(), _json) ?? new()
-            : new List<SavedItemDto>();
-
-        ViewBag.SourcesCount = sources.Count;
-        ViewBag.Sources      = sources.TakeLast(3).Reverse().ToList();
-        ViewBag.ItemsCount   = items.Count;
-        ViewBag.RecentItems  = items.Take(3).ToList();
-        ViewBag.LastIngest   = items.Any() ? items.Max(i => i.CreatedAt) : (DateTime?)null;
-
-        return View();
-    }
+    public IActionResult Index() => RedirectToAction(nameof(Catalog));
 
     public async Task<IActionResult> Catalog()
     {
@@ -85,7 +60,11 @@ public class HomeController : Controller
             Fields     = ParseJsonFields(item.Json),
         }).ToList();
 
-        ViewBag.Sources = sources;
+        ViewBag.Sources      = sources;
+        ViewBag.SourcesCount = sources.Count;
+        ViewBag.ItemsCount   = rawItems.Count;
+        ViewBag.LastIngest   = rawItems.Any() ? rawItems.Max(i => i.CreatedAt) : (DateTime?)null;
+
         return View(cards);
     }
 

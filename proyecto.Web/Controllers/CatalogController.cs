@@ -381,11 +381,3 @@ public class SpeakRequest
     public string Text { get; set; } = string.Empty;
     public string LanguageCode { get; set; } = "es-ES";
 }
-
-public class SecretDto
-{
-    public int Id { get; set; }
-    public int? SourceId { get; set; }
-    public string KeyName { get; set; } = string.Empty;
-    public string KeyValue { get; set; } = string.Empty;
-}

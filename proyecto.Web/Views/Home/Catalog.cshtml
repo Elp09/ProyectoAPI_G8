@@ -147,6 +147,31 @@
             </button>
         </div>
 
+        <div class="row g-2 mb-2">
+            <div class="col-4">
+                <div class="card text-bg-dark py-2 px-3">
+                    <div class="small text-light-emphasis">APIs configuradas</div>
+                    <div class="fw-bold fs-5">@ViewBag.SourcesCount</div>
+                </div>
+            </div>
+            <div class="col-4">
+                <div class="card text-bg-dark py-2 px-3">
+                    <div class="small text-light-emphasis">Ítems guardados</div>
+                    <div class="fw-bold fs-5">@ViewBag.ItemsCount</div>
+                </div>
+            </div>
+            <div class="col-4">
+                <div class="card text-bg-dark py-2 px-3">
+                    <div class="small text-light-emphasis">Última ingesta</div>
+                    <div class="fw-bold fs-5">
+                        @(ViewBag.LastIngest != null
+                            ? ((DateTime)ViewBag.LastIngest).ToString("dd MMM")
+                            : "—")
+                    </div>
+                </div>
+            </div>
+        </div>
+
         @if (Model.Any())
         {
             <div class="filter-bar">
