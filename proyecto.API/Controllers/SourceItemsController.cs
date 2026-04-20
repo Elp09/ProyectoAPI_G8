@@ -65,7 +65,7 @@ public class SourceItemsController : ControllerBase
     }
 
     // POST api/sourceitems/save/{sourceId}
-    // Recibe un JSON ya normalizado y lo guarda en BD
+    // Recibe JSON crudo y lo guarda directamente en BD
     [HttpPost("save/{sourceId:int}")]
     public async Task<IActionResult> Save(int sourceId, [FromBody] SaveRequest request)
     {
@@ -73,14 +73,10 @@ public class SourceItemsController : ControllerBase
         if (source is null)
             return NotFound($"Source con Id={sourceId} no encontrada.");
 
-        var document = _normalization.Deserialize(request.NormalizedJson);
-        if (document is null)
-            return BadRequest("El JSON no sigue el esquema edu.univ.ingest.v1.");
-
         var savedBy = User.FindFirstValue(ClaimTypes.Email)
                    ?? User.FindFirstValue(ClaimTypes.Name);
 
-        var item = await _itemService.SaveAsync(document, sourceId, request.Endpoint, request.IsLocalUpload, savedBy);
+        var item = await _itemService.SaveAsync(request.RawJson, sourceId, request.Endpoint, request.IsLocalUpload, savedBy);
         return Ok(new { item.Id, item.SourceId, item.CreatedAt });
     }
 
@@ -95,4 +91,4 @@ public class SourceItemsController : ControllerBase
 }
 
 public record NormalizeRequest(string RawJson);
-public record SaveRequest(string NormalizedJson, string? Endpoint, bool IsLocalUpload);
+public record SaveRequest(string RawJson, string? Endpoint, bool IsLocalUpload);

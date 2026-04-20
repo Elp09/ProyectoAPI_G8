@@ -30,14 +30,12 @@ public class CatalogController : Controller
     {
         var client = CreateClientWithToken();
 
-        // Cargar fuentes para el dropdown
         var sourcesResponse = await client.GetAsync("api/sources");
         var sources = sourcesResponse.IsSuccessStatusCode
             ? JsonSerializer.Deserialize<List<ApiSource>>(
                 await sourcesResponse.Content.ReadAsStringAsync(), _json) ?? new()
             : new List<ApiSource>();
 
-        // Cargar ítems guardados en BD
         var itemsResponse = await client.GetAsync("api/sourceitems");
         var dbItems = itemsResponse.IsSuccessStatusCode
             ? JsonSerializer.Deserialize<List<SavedItemDto>>(
@@ -47,7 +45,6 @@ public class CatalogController : Controller
         ViewBag.Sources = sources;
         ViewBag.DbItems = dbItems;
 
-        // Si no hay ítems temporales ni guardados, mostrar ítems de las fuentes (requisito del PDF)
         if (!_store.Items.Any() && !dbItems.Any() && sources.Any())
             TempData["Info"] = "No hay ítems guardados. Selecciona una fuente y haz clic en Consultar.";
 
@@ -60,7 +57,6 @@ public class CatalogController : Controller
     {
         var client = CreateClientWithToken();
 
-        // Obtener la fuente
         var sourceResponse = await client.GetAsync($"api/sources/{sourceId}");
         if (!sourceResponse.IsSuccessStatusCode)
         {
@@ -71,7 +67,6 @@ public class CatalogController : Controller
         var source = JsonSerializer.Deserialize<ApiSource>(
             await sourceResponse.Content.ReadAsStringAsync(), _json)!;
 
-        // Construir URL final
         var endpoint = string.IsNullOrWhiteSpace(endpointOverride) ? source.Endpoint : endpointOverride;
         var requestUrl = string.IsNullOrWhiteSpace(endpoint)
             ? source.Url
@@ -92,40 +87,33 @@ public class CatalogController : Controller
 
         // Llamar a la fuente externa
         var externalClient = _httpClientFactory.CreateClient();
-        var request = new HttpRequestMessage(HttpMethod.Get, requestUrl);
 
         if (!string.IsNullOrWhiteSpace(secret))
         {
-            request.Headers.TryAddWithoutValidation("Authorization",
-                source.AuthType switch
-                {
-                    "bearer" => $"Bearer {secret}",
-                    "apikey" => $"ApiKey {secret}",
-                    "basic"  => $"Basic {secret}",
-                    _        => secret
-                });
+            if (source.AuthType == "query")
+                requestUrl = requestUrl.Replace("{secret}", Uri.EscapeDataString(secret));
+            else
+                requestUrl = requestUrl.Replace("{secret}", Uri.EscapeDataString(secret));
         }
 
-        var externalResponse = await externalClient.SendAsync(request);
-        var rawJson = await externalResponse.Content.ReadAsStringAsync();
+        var request = new HttpRequestMessage(HttpMethod.Get, requestUrl);
+        request.Headers.TryAddWithoutValidation("User-Agent", "ProyectoAPI_G8/1.0");
 
-        // Normalizar via API
-        var normalizePayload = new { rawJson };
-        var normalizeResponse = await client.PostAsync(
-            $"api/sourceitems/normalize/{sourceId}",
-            ToJson(normalizePayload));
+        if (!string.IsNullOrWhiteSpace(secret) && source.AuthType == "header")
+            request.Headers.TryAddWithoutValidation("Authorization", $"Bearer {secret}");
 
-        if (!normalizeResponse.IsSuccessStatusCode)
+        HttpResponseMessage externalResponse;
+        try { externalResponse = await externalClient.SendAsync(request); }
+        catch (Exception ex)
         {
-            var err = await normalizeResponse.Content.ReadAsStringAsync();
-            TempData["Error"] = $"Error al normalizar: {err}";
+            TempData["Error"] = $"Error al contactar la fuente: {ex.Message}";
             return RedirectToAction(nameof(Index));
         }
 
-        var normalizedJsons = JsonSerializer.Deserialize<List<string>>(
-            await normalizeResponse.Content.ReadAsStringAsync(), _json) ?? new();
+        var rawJson = await externalResponse.Content.ReadAsStringAsync();
 
-        foreach (var normalizedJson in normalizedJsons)
+        var items = ExtractItems(rawJson);
+        foreach (var itemJson in items)
         {
             _store.Items.Add(new IngestedItem
             {
@@ -134,17 +122,19 @@ public class CatalogController : Controller
                 Endpoint      = endpoint,
                 IsLocalUpload = false,
                 FetchedAt     = DateTime.Now,
-                Json          = normalizedJson
+                Json          = itemJson
             });
         }
 
-        TempData["Success"] = $"{normalizedJsons.Count} ítem(s) ingestado(s). Guárdalos en la BD cuando estés listo.";
+        TempData["Success"] = items.Count == 1
+            ? "Ítem ingestado. Guárdalo en la BD cuando estés listo."
+            : $"{items.Count} ítems ingestados. Guárdalos en la BD cuando estés listo.";
         return RedirectToAction(nameof(Index));
     }
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Upload(IFormFile file, int sourceId)
+    public async Task<IActionResult> Upload(IFormFile file, string? uploadSourceName)
     {
         if (file == null || file.Length == 0)
         {
@@ -152,54 +142,28 @@ public class CatalogController : Controller
             return RedirectToAction(nameof(Index));
         }
 
-        var client = CreateClientWithToken();
-
-        var sourceResponse = await client.GetAsync($"api/sources/{sourceId}");
-        if (!sourceResponse.IsSuccessStatusCode)
-        {
-            TempData["Error"] = "Fuente no encontrada.";
-            return RedirectToAction(nameof(Index));
-        }
-
-        var source = JsonSerializer.Deserialize<ApiSource>(
-            await sourceResponse.Content.ReadAsStringAsync(), _json)!;
-
         using var reader = new StreamReader(file.OpenReadStream());
-        var rawJson = await reader.ReadToEndAsync();
+        var uploadedJson = await reader.ReadToEndAsync();
 
-        // Normalizar via API (también valida el esquema si ya está normalizado)
-        var normalizePayload = new { rawJson };
-        var normalizeResponse = await client.PostAsync(
-            $"api/sourceitems/normalize/{sourceId}",
-            ToJson(normalizePayload));
+        var jsonToStore = IsIngestDocument(uploadedJson)
+            ? ExtractOriginal(uploadedJson) ?? uploadedJson
+            : uploadedJson;
 
-        if (!normalizeResponse.IsSuccessStatusCode)
+        _store.Items.Add(new IngestedItem
         {
-            TempData["Error"] = "Error al procesar el archivo.";
-            return RedirectToAction(nameof(Index));
-        }
+            SourceId      = 0,
+            SourceName    = string.IsNullOrWhiteSpace(uploadSourceName) ? "Subida manual" : uploadSourceName,
+            Endpoint      = file.FileName,
+            IsLocalUpload = true,
+            FetchedAt     = DateTime.Now,
+            Json          = jsonToStore
+        });
 
-        var normalizedJsons = JsonSerializer.Deserialize<List<string>>(
-            await normalizeResponse.Content.ReadAsStringAsync(), _json) ?? new();
-
-        foreach (var normalizedJson in normalizedJsons)
-        {
-            _store.Items.Add(new IngestedItem
-            {
-                SourceId      = sourceId,
-                SourceName    = source.Name,
-                Endpoint      = file.FileName,
-                IsLocalUpload = true,
-                FetchedAt     = DateTime.Now,
-                Json          = normalizedJson
-            });
-        }
-
-        TempData["Success"] = $"{normalizedJsons.Count} ítem(s) cargado(s) desde archivo.";
+        TempData["Success"] = "Archivo cargado. Guárdalo en la BD cuando estés listo.";
         return RedirectToAction(nameof(Index));
     }
 
-    // Guardar un ítem temporal en la BD
+    // Guardar ítem temporal en BD (raw JSON directo)
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Save(Guid id)
@@ -211,8 +175,14 @@ public class CatalogController : Controller
             return RedirectToAction(nameof(Index));
         }
 
+        if (item.SourceId == 0)
+        {
+            TempData["Error"] = "Este ítem fue subido sin fuente. Elimínalo y súbelo de nuevo asociándolo a una fuente existente.";
+            return RedirectToAction(nameof(Index));
+        }
+
         var client = CreateClientWithToken();
-        var payload = new { normalizedJson = item.Json, endpoint = item.Endpoint, isLocalUpload = item.IsLocalUpload };
+        var payload = new { rawJson = item.Json, endpoint = item.Endpoint, isLocalUpload = item.IsLocalUpload };
 
         var response = await client.PostAsync(
             $"api/sourceitems/save/{item.SourceId}",
@@ -230,18 +200,38 @@ public class CatalogController : Controller
         return RedirectToAction(nameof(Index));
     }
 
-    // Descargar ítem temporal
-    public IActionResult Download(Guid id)
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public IActionResult ClearMemory()
+    {
+        _store.Items.Clear();
+        TempData["Success"] = "Memoria limpiada.";
+        return RedirectToAction(nameof(Index));
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public IActionResult DeleteTemp(Guid id)
+    {
+        var item = _store.Items.FirstOrDefault(i => i.Id == id);
+        if (item != null) _store.Items.Remove(item);
+        return RedirectToAction(nameof(Index));
+    }
+
+    // Descargar ítem temporal — normaliza al exportar
+    public async Task<IActionResult> Download(Guid id)
     {
         var item = _store.Items.FirstOrDefault(i => i.Id == id);
         if (item == null) return NotFound();
 
-        var bytes = Encoding.UTF8.GetBytes(item.Json);
+        var client = CreateClientWithToken();
+        var normalizedJson = await NormalizeForExport(client, item.Json, item.SourceId);
+
         var fileName = $"{item.SourceName}-{DateTime.Now:yyyyMMddHHmmss}.json";
-        return File(bytes, "application/json", fileName);
+        return File(Encoding.UTF8.GetBytes(normalizedJson), "application/json", fileName);
     }
 
-    // Descargar ítem guardado en BD
+    // Descargar ítem guardado en BD — normaliza al exportar
     public async Task<IActionResult> DownloadSaved(int id)
     {
         var client = CreateClientWithToken();
@@ -252,8 +242,8 @@ public class CatalogController : Controller
             await response.Content.ReadAsStringAsync(), _json);
         if (item == null) return NotFound();
 
-        var bytes = Encoding.UTF8.GetBytes(item.Json);
-        return File(bytes, "application/json", $"item-{id}-{DateTime.Now:yyyyMMddHHmmss}.json");
+        var normalizedJson = await NormalizeForExport(client, item.Json, item.SourceId);
+        return File(Encoding.UTF8.GetBytes(normalizedJson), "application/json", $"item-{id}-{DateTime.Now:yyyyMMddHHmmss}.json");
     }
 
     // Eliminar ítem guardado en BD (Admin only)
@@ -288,6 +278,91 @@ public class CatalogController : Controller
         }
     }
 
+    // ── Helpers ──────────────────────────────────────────────────────────
+
+    /// <summary>Llama a api/sourceitems/normalize y devuelve el JSON normalizado listo para descargar.</summary>
+    private async Task<string> NormalizeForExport(HttpClient client, string rawJson, int sourceId)
+    {
+        var normalizeResponse = await client.PostAsync(
+            $"api/sourceitems/normalize/{sourceId}",
+            ToJson(new { rawJson }));
+
+        if (!normalizeResponse.IsSuccessStatusCode)
+            return rawJson; // fallback: devolver crudo si falla
+
+        var docs = JsonSerializer.Deserialize<List<string>>(
+            await normalizeResponse.Content.ReadAsStringAsync(), _json) ?? new();
+
+        // Si hay un solo elemento devolver ese, si hay varios devolver array JSON
+        if (docs.Count == 1) return docs[0];
+        if (docs.Count > 1)  return "[" + string.Join(",", docs) + "]";
+        return rawJson;
+    }
+
+    private static List<string> ExtractItems(string json)
+    {
+        try
+        {
+            using var doc = JsonDocument.Parse(json);
+            var root = doc.RootElement;
+
+            if (root.ValueKind == JsonValueKind.Array)
+                return root.EnumerateArray().Select(e => e.GetRawText()).ToList();
+
+            if (root.ValueKind == JsonValueKind.Object)
+            {
+                foreach (var prop in root.EnumerateObject())
+                {
+                    if (prop.Value.ValueKind == JsonValueKind.Array)
+                    {
+                        var elements = prop.Value.EnumerateArray().Select(e => e.GetRawText()).ToList();
+                        if (elements.Count > 0) return elements;
+                    }
+                }
+            }
+        }
+        catch { }
+
+        return new List<string> { json };
+    }
+
+    private static bool IsIngestDocument(string json)
+    {
+        try
+        {
+            using var doc = JsonDocument.Parse(json);
+            return doc.RootElement.TryGetProperty("schemaVersion", out var sv)
+                && sv.GetString() == "edu.univ.ingest.v1";
+        }
+        catch { return false; }
+    }
+
+    private static string? ExtractOriginal(string ingestJson)
+    {
+        try
+        {
+            using var doc = JsonDocument.Parse(ingestJson);
+            var root = doc.RootElement;
+
+            // Busca raw.data.original de forma case-insensitive
+            foreach (var p1 in root.EnumerateObject())
+            {
+                if (!p1.Name.Equals("raw", StringComparison.OrdinalIgnoreCase)) continue;
+                foreach (var p2 in p1.Value.EnumerateObject())
+                {
+                    if (!p2.Name.Equals("data", StringComparison.OrdinalIgnoreCase)) continue;
+                    foreach (var p3 in p2.Value.EnumerateObject())
+                    {
+                        if (!p3.Name.Equals("original", StringComparison.OrdinalIgnoreCase)) continue;
+                        return p3.Value.GetRawText();
+                    }
+                }
+            }
+        }
+        catch { }
+        return null;
+    }
+
     private HttpClient CreateClientWithToken()
     {
         var client = _httpClientFactory.CreateClient("Api");
@@ -305,12 +380,4 @@ public class SpeakRequest
 {
     public string Text { get; set; } = string.Empty;
     public string LanguageCode { get; set; } = "es-ES";
-}
-
-public class SecretDto
-{
-    public int Id { get; set; }
-    public int? SourceId { get; set; }
-    public string KeyName { get; set; } = string.Empty;
-    public string KeyValue { get; set; } = string.Empty;
 }

@@ -32,6 +32,21 @@ public class ApisController : Controller
         var sources = JsonSerializer.Deserialize<List<ApiSource>>(
             await response.Content.ReadAsStringAsync(), _json) ?? new();
 
+        var secretsMap = new Dictionary<int, string>();
+        if (User.IsInRole("Admin"))
+        {
+            var secretsResponse = await client.GetAsync("api/secrets");
+            if (secretsResponse.IsSuccessStatusCode)
+            {
+                var secrets = JsonSerializer.Deserialize<List<SecretDto>>(
+                    await secretsResponse.Content.ReadAsStringAsync(), _json) ?? new();
+                foreach (var s in secrets)
+                    if (s.SourceId.HasValue)
+                        secretsMap[s.SourceId.Value] = s.KeyValue;
+            }
+        }
+        ViewBag.SecretsMap = secretsMap;
+
         return View(sources);
     }
 
@@ -39,7 +54,7 @@ public class ApisController : Controller
     [Authorize(Roles = "Admin")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Add(string name, string url, string? description,
-        string authType, string? secret, string? endpoint)
+        string? secret, string? authType, string? endpoint)
     {
         var client = CreateClientWithToken();
 
@@ -50,7 +65,7 @@ public class ApisController : Controller
             description,
             componentType = "api",
             requiresSecret = !string.IsNullOrWhiteSpace(secret),
-            authType = authType ?? "none",
+            authType = string.IsNullOrWhiteSpace(secret) ? "none" : (authType ?? "query"),
             endpoint
         };
 
@@ -71,6 +86,55 @@ public class ApisController : Controller
 
         if (response.IsSuccessStatusCode)
             TempData["Success"] = "Fuente agregada correctamente.";
+        else
+        {
+            var body = await response.Content.ReadAsStringAsync();
+            TempData["Error"] = $"Error {(int)response.StatusCode}: {body}";
+        }
+
+        return RedirectToAction(nameof(Index));
+    }
+
+    [HttpPost]
+    [Authorize(Roles = "Admin")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Edit(int id, string name, string url, string? description,
+        string? secret, string? authType, string? endpoint)
+    {
+        var client = CreateClientWithToken();
+
+        var sourcePayload = new
+        {
+            id,
+            name,
+            url,
+            description,
+            componentType = "api",
+            requiresSecret = !string.IsNullOrWhiteSpace(secret),
+            authType = string.IsNullOrWhiteSpace(secret) ? "none" : (authType ?? "query"),
+            endpoint
+        };
+
+        var response = await client.PutAsync($"api/sources/{id}", ToJson(sourcePayload));
+
+        if (response.IsSuccessStatusCode && !string.IsNullOrWhiteSpace(secret))
+        {
+            // Delete existing secrets for this source then add new one
+            var existingSecrets = await client.GetAsync($"api/secrets/source/{id}");
+            if (existingSecrets.IsSuccessStatusCode)
+            {
+                var secrets = JsonSerializer.Deserialize<List<SecretDto>>(
+                    await existingSecrets.Content.ReadAsStringAsync(), _json);
+                if (secrets != null)
+                    foreach (var s in secrets)
+                        await client.DeleteAsync($"api/secrets/{s.Id}");
+            }
+            var secretPayload = new { sourceId = id, keyName = "api-secret", keyValue = secret };
+            await client.PostAsync("api/secrets", ToJson(secretPayload));
+        }
+
+        if (response.IsSuccessStatusCode)
+            TempData["Success"] = "Fuente actualizada correctamente.";
         else
         {
             var body = await response.Content.ReadAsStringAsync();

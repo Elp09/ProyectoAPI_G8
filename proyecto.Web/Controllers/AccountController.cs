@@ -149,7 +149,7 @@ public class AccountController : Controller
 
         await HttpContext.Session.CommitAsync();
 
-        return RedirectToAction("Index", "Home");
+        return RedirectToAction("Catalog", "Home");
     }
 
     // ======================
