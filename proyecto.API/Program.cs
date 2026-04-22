@@ -143,7 +143,7 @@ var app = builder.Build();
 
 
 // =====================
-// SEED SOLO ROLES
+// SEED ROLES + FUENTE LOCAL
 // =====================
 using (var scope = app.Services.CreateScope())
 {
@@ -154,6 +154,22 @@ using (var scope = app.Services.CreateScope())
 
     if (!await roleManager.RoleExistsAsync("User"))
         await roleManager.CreateAsync(new IdentityRole("User"));
+
+    var db = scope.ServiceProvider.GetRequiredService<DataDbContext>();
+    if (!db.Sources.Any(s => s.Name == "Subido localmente"))
+    {
+        db.Sources.Add(new Source
+        {
+            Name          = "Subido localmente",
+            Url           = "local://upload",
+            Description   = "Fuente reservada para archivos JSON subidos manualmente.",
+            ComponentType = "api",
+            RequiresSecret = false,
+            AuthType      = "none",
+            CreatedAt     = DateTime.UtcNow
+        });
+        await db.SaveChangesAsync();
+    }
 }
 
 // =====================

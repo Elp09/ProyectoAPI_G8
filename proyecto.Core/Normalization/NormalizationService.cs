@@ -20,8 +20,11 @@ public class NormalizationService : INormalizationService
         try
         {
             using var doc = JsonDocument.Parse(json);
-            return doc.RootElement.TryGetProperty("schemaVersion", out var sv)
-                && sv.GetString() == "edu.univ.ingest.v1";
+            foreach (var prop in doc.RootElement.EnumerateObject())
+                if (prop.Name.Equals("schemaVersion", StringComparison.OrdinalIgnoreCase)
+                    && prop.Value.GetString() == "edu.univ.ingest.v1")
+                    return true;
+            return false;
         }
         catch { return false; }
     }
