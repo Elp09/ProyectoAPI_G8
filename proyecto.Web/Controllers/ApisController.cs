@@ -29,8 +29,10 @@ public class ApisController : Controller
             return View(new List<ApiSource>());
         }
 
-        var sources = JsonSerializer.Deserialize<List<ApiSource>>(
-            await response.Content.ReadAsStringAsync(), _json) ?? new();
+        var sources = (JsonSerializer.Deserialize<List<ApiSource>>(
+            await response.Content.ReadAsStringAsync(), _json) ?? new())
+            .Where(s => s.Name != "Subido localmente")
+            .ToList();
 
         var secretsMap = new Dictionary<int, string>();
         if (User.IsInRole("Admin"))

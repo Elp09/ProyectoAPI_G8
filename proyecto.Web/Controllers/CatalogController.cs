@@ -149,10 +149,12 @@ public class CatalogController : Controller
             ? ExtractOriginal(uploadedJson) ?? uploadedJson
             : uploadedJson;
 
+        var localSourceId = await EnsureLocalSourceAsync();
+
         _store.Items.Add(new IngestedItem
         {
-            SourceId      = 0,
-            SourceName    = string.IsNullOrWhiteSpace(uploadSourceName) ? "Subida manual" : uploadSourceName,
+            SourceId      = localSourceId,
+            SourceName    = "Subido localmente",
             Endpoint      = file.FileName,
             IsLocalUpload = true,
             FetchedAt     = DateTime.Now,
@@ -161,6 +163,20 @@ public class CatalogController : Controller
 
         TempData["Success"] = "Archivo cargado. Guárdalo en la BD cuando estés listo.";
         return RedirectToAction(nameof(Index));
+    }
+
+    private async Task<int> EnsureLocalSourceAsync()
+    {
+        var client = CreateClientWithToken();
+        var sourcesResponse = await client.GetAsync("api/sources");
+        if (sourcesResponse.IsSuccessStatusCode)
+        {
+            var sources = JsonSerializer.Deserialize<List<ApiSource>>(
+                await sourcesResponse.Content.ReadAsStringAsync(), _json) ?? new();
+            var existing = sources.FirstOrDefault(s => s.Name == "Subido localmente");
+            if (existing != null) return existing.Id;
+        }
+        return 0;
     }
 
     // Guardar ítem temporal en BD (raw JSON directo)
@@ -172,12 +188,6 @@ public class CatalogController : Controller
         if (item == null)
         {
             TempData["Error"] = "Ítem no encontrado.";
-            return RedirectToAction(nameof(Index));
-        }
-
-        if (item.SourceId == 0)
-        {
-            TempData["Error"] = "Este ítem fue subido sin fuente. Elimínalo y súbelo de nuevo asociándolo a una fuente existente.";
             return RedirectToAction(nameof(Index));
         }
 
@@ -331,8 +341,11 @@ public class CatalogController : Controller
         try
         {
             using var doc = JsonDocument.Parse(json);
-            return doc.RootElement.TryGetProperty("schemaVersion", out var sv)
-                && sv.GetString() == "edu.univ.ingest.v1";
+            foreach (var prop in doc.RootElement.EnumerateObject())
+                if (prop.Name.Equals("schemaVersion", StringComparison.OrdinalIgnoreCase)
+                    && prop.Value.GetString() == "edu.univ.ingest.v1")
+                    return true;
+            return false;
         }
         catch { return false; }
     }
