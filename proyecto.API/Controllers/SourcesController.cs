@@ -49,6 +49,9 @@ public class SourcesController : ControllerBase
     public async Task<IActionResult> Update(int id, [FromBody] Source source)
     {
         if (id != source.Id) return BadRequest("El ID no coincide.");
+        var existing = await _sourceService.GetByIdAsync(id);
+        if (existing is null) return NotFound();
+        source.CreatedAt = existing.CreatedAt;
         await _sourceService.UpdateAsync(source);
         return NoContent();
     }
